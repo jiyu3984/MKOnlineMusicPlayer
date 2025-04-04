@@ -1,8 +1,8 @@
 /**************************************************
  * MKOnlinePlayer v2.31
- * 歌词解析及滚动模块（修复翻译高亮 & 滚动错位）
- * 编写：mengkun(http://mkblog.cn) | 修改：ChatGPT
- * 时间：2017-9-13 / 2025-04 修复
+ * 歌词解析及滚动模块（修复翻译高亮 & 滚动错位 + 动画）
+ * 编写：mengkun(https://github.com/jiyu3984/ikunmusic) | 修改：季雨
+ * 时间：2017-9-13 / 2025-04 修复与美化
  *************************************************/
 
 var lyricArea = $("#lyric"); // 歌词显示容器
@@ -57,7 +57,7 @@ function refreshLyric(time) {
     scrollLyric(i);
 }
 
-// 滚动歌词到指定句（修复翻译影响滚动的问题）
+// 滚动歌词到指定句
 function scrollLyric(time) {
     if (rem.lyric === '') return false;
 
@@ -73,11 +73,11 @@ function scrollLyric(time) {
 
     rem.lastLyric = time;
 
-    // 修复：只高亮 shell（避免翻译高亮）
+    // 高亮当前歌词 shell，避免翻译也加高亮
     $(".lrc-item .shell.lplaying").removeClass("lplaying");
     $(".lrc-item[data-no='" + i + "'] .shell").addClass("lplaying");
 
-    // 修复：使用元素位置定位滚动
+    // 滚动到当前歌词位置
     var currentItem = $(".lrc-item[data-no='" + i + "']");
     if (currentItem.length > 0) {
         var scroll = currentItem.position().top + lyricArea.scrollTop() - ($(".lyric").height() / 2);
