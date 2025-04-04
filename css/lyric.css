@@ -33,27 +33,26 @@
     font-size: 14px;
     color: #aaa;
     margin-top: 4px;
-}
-
-/* 当前播放行的高亮动画 - QQ音乐风格 */
-.shell.lplaying {
-    color: #ffffff;
-    font-weight: 600;
-    background: none; /* 移除背景框感 */
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4), 0 0 16px rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
-    transition: all 0.4s ease;
-}
-
-/* 普通歌词样式 */
-.shell {
-    color: #ccc;
-    opacity: 0.6;
     transition: all 0.3s ease;
 }
 
-/* 当前行高亮过渡 */
+/* 当前播放行的高亮动画 */
 .shell.lplaying {
-    opacity: 1;
+    color: #fff;
     font-weight: 600;
+    background: none;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4), 0 0 16px rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+    transition: all 0.4s ease;
+    z-index: 9999;
+}
+
+/* 翻译部分的高亮样式 */
+.trans-lyric.lplaying {
+    color: #fff;
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4), 0 0 16px rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+    transition: all 0.4s ease;
+    z-index: 9999;
 }
