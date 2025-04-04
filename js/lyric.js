@@ -14,15 +14,15 @@ function lyricTip(str) {
 
 // 歌曲加载完后的回调函数
 // 参数：歌词源文件
-function lyricCallback(str, id) {
+function lyricCallback(str, id, tstr) {
     if(id !== musicList[rem.playlist].item[rem.playid].id) return;  // 返回的歌词不是当前这首歌的，跳过
     
-    rem.lyric = parseLyric(str);    // 解析获取到的歌词
-    
-    if(rem.lyric === '') {
-        lyricTip('没有歌词');
+    if (str === "") {
+         lyricTip('暂时没有歌词');
         return false;
     }
+     rem.lyric = parseLyric(str); // 解析获取到的歌词
+     rem.tlyric = parseLyric(tstr);
     
     lyricArea.html('');     // 清空歌词区域的内容
     lyricArea.scrollTop(0);    // 滚动到顶部
@@ -34,7 +34,11 @@ function lyricCallback(str, id) {
     for(var k in rem.lyric){
         var txt = rem.lyric[k];
         if(!txt) txt = "&nbsp;";
-        var li = $("<li data-no='"+i+"' class='lrc-item'>"+txt+"</li>");
+        if (!rem.tlyric[k] || rem.tlyric[k] === '') {
+             var li = $("<li data-no='" + i + "' class='lrc-item'><span class='shell'>" + txt + "</span></li>");
+         } else {
+             var li = $("<li data-no='" + i + "' class='lrc-item'><span class='shell'>" + txt + "<br><span class='trans-lyric'>" + rem.tlyric[k] + "</span></span></li>");
+         }
         lyricArea.append(li);
         i++;
     }

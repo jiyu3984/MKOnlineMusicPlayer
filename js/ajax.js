@@ -313,7 +313,7 @@ function ajaxLyric(music, callback) {
             }
             
             if (jsonData.lyric) {
-                callback(jsonData.lyric, music.lyric_id);    // 回调函数
+                callback(jsonData.lyric, music.lyric_id, jsonData.tlyric);    // 回调函数
             } else {
                 callback('', music.lyric_id);    // 回调函数
             }
