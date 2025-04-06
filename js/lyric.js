@@ -106,7 +106,7 @@ function applyBlur(currentIndex) {
     const centerIndex = currentIndex;
     const maxDistance = 6;  // 上下各模糊范围
 
-    const maxTilt = isMobile ? 30 : 15;  // 安卓倾斜更大，PC小一点
+    const maxTilt = isMobile ? 45 : 15;  // 安卓倾斜更大，PC小一点
 
     items.each(function () {
         const index = parseInt($(this).data("no"));
