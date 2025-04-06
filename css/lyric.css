@@ -1,4 +1,4 @@
-/* === 歌词模块样式（包含高亮动画 + 渐模糊） === */
+/* === 歌词模块样式（包含高亮动画 + 渐模糊 + 3D倾斜） === */
 /* ikunmusic v0.1
  * Ajax 当前高亮歌词放大
  * 编写：季雨(https://github.com/jiyu3984/ikunmusic)
@@ -12,12 +12,15 @@
     color: #eee;
     font-size: 18px;
     overflow-y: auto;
+    perspective: 800px; /* 增加透视感 */
 }
 
 /* 歌词行 */
 .lrc-item {
     margin: 10px 0;
-    transition: filter 0.6s ease;
+    transition: filter 0.6s ease, transform 0.6s ease;
+    transform-style: preserve-3d; /* 保持3D子元素效果 */
+    will-change: transform, filter;
 }
 
 /* 高亮所在整行不模糊 */
