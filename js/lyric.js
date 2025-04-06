@@ -1,6 +1,6 @@
 /**************************************************
  * MKOnlinePlayer v2.31
- * 歌词解析及滚动模块（修复翻译高亮 & 滚动错位 + 动画 + 渐变模糊）
+ * 歌词解析及滚动模块（修复翻译高亮 & 滚动错位 + 动画 + 渐变模糊 + 3D倾斜）
  * 编写：mengkun | 修改：季雨
  * 时间：2017-9-13 / 2025-04
  *************************************************/
@@ -11,7 +11,7 @@ var lyricArea = $("#lyric");    // 歌词显示容器
 var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 // 模糊等级参数（安卓弱，PC强）
-var maxBlur = isMobile ? 3 : 1; // PC模糊程度从4降低到2
+var maxBlur = isMobile ? 2 : 2;  // 安卓2，PC模糊减半为2
 
 // 显示提示语（如歌词加载中、无歌词等）
 function lyricTip(str) {
@@ -63,7 +63,7 @@ function refreshLyric(time) {
     scrollLyric(i);
 }
 
-// 滚动歌词到指定句（修复翻译影响滚动的问题 + 添加模糊效果）
+// 滚动歌词到指定句（保留模糊 + 高亮 + 平滑滚动 + 翻译处理）
 function scrollLyric(time) {
     if (rem.lyric === '') return false;
 
@@ -96,27 +96,41 @@ function scrollLyric(time) {
         lyricArea.stop().animate({ scrollTop: scrollPosition }, 1000);
     }
 
-    // 应用模糊层级
+    // 应用模糊 + 倾斜
     applyBlur(i);
 }
 
-// 渐变模糊处理
+// 渐变模糊 + 3D 倾斜动画（含安卓加强版）
 function applyBlur(currentIndex) {
     const items = $(".lrc-item");
     const centerIndex = currentIndex;
-    const maxDistance = 6;  // 最大模糊层数（上下各几行）
+    const maxDistance = 6;  // 上下各模糊范围
+
+    const maxTilt = isMobile ? 30 : 15;  // 安卓倾斜更大，PC小一点
 
     items.each(function () {
         const index = parseInt($(this).data("no"));
         const distance = Math.abs(index - centerIndex);
 
         if (distance === 0) {
-            $(this).css("filter", "none");
+            $(this).css({
+                filter: "none",
+                transform: "none"
+            });
         } else if (distance <= maxDistance) {
             const blur = Math.min(maxBlur, (distance / maxDistance) * maxBlur);
-            $(this).css("filter", `blur(${blur}px)`);
+            const tilt = (distance / maxDistance) * maxTilt;
+            const direction = index < centerIndex ? -1 : 1;  // 上面向左倾，下面向右倾
+            $(this).css({
+                filter: `blur(${blur}px)`,
+                transform: `rotateY(${direction * tilt}deg)`
+            });
         } else {
-            $(this).css("filter", `blur(${maxBlur}px)`);
+            const direction = index < centerIndex ? -1 : 1;
+            $(this).css({
+                filter: `blur(${maxBlur}px)`,
+                transform: `rotateY(${direction * maxTilt}deg)`
+            });
         }
     });
 }
