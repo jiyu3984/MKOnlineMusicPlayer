@@ -1,11 +1,17 @@
 /**************************************************
  * MKOnlinePlayer v2.31
- * 歌词解析及滚动模块（修复翻译高亮 & 滚动错位 + 动画）
- * 编写：mengkun(https://github.com/jiyu3984/ikunmusic) | 修改：季雨
- * 时间：2017-9-13 / 2025-04 修复与美化
+ * 歌词解析及滚动模块（修复翻译高亮 & 滚动错位 + 动画 + 渐变模糊）
+ * 编写：mengkun | 修改：季雨
+ * 时间：2017-9-13 / 2025-04
  *************************************************/
 
 var lyricArea = $("#lyric");    // 歌词显示容器
+
+// 判断是否为移动设备（安卓/苹果）
+var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// 模糊等级参数（安卓弱，PC强）
+var maxBlur = isMobile ? 2 : 4;
 
 // 显示提示语（如歌词加载中、无歌词等）
 function lyricTip(str) {
@@ -57,7 +63,7 @@ function refreshLyric(time) {
     scrollLyric(i);
 }
 
-// 滚动歌词到指定句（修复翻译影响滚动的问题）
+// 滚动歌词到指定句（修复翻译影响滚动的问题 + 添加模糊效果）
 function scrollLyric(time) {
     if (rem.lyric === '') return false;
 
@@ -73,23 +79,46 @@ function scrollLyric(time) {
 
     rem.lastLyric = time;
 
-    // 移除之前高亮的歌词
+    // 移除之前高亮
     $(".lrc-item .shell.lplaying").removeClass("lplaying");
-    $(".lrc-item .trans-lyric.lplaying").removeClass("lplaying"); // 移除翻译高亮
+    $(".lrc-item .trans-lyric.lplaying").removeClass("lplaying");
+    $(".lrc-item").removeClass("lrc-item-playing");
 
-    // 给当前歌词加上高亮
-    $(".lrc-item[data-no='" + i + "'] .shell").addClass("lplaying");
-    $(".lrc-item[data-no='" + i + "'] .trans-lyric").addClass("lplaying"); // 也给翻译歌词加上高亮
+    // 高亮当前行
+    let $current = $(".lrc-item[data-no='" + i + "']");
+    $current.find(".shell").addClass("lplaying");
+    $current.find(".trans-lyric").addClass("lplaying");
+    $current.addClass("lrc-item-playing");
 
-    // 确保高亮的歌词总是在可见区域内
-    var currentItem = $(".lrc-item[data-no='" + i + "']");
-    if (currentItem.length > 0) {
-        // 获取歌词元素相对页面的距离
-        var scrollPosition = currentItem.position().top + lyricArea.scrollTop() - ($(".lyric").height() / 2);
-
-        // 滚动歌词容器
+    // 滚动平滑
+    if ($current.length > 0) {
+        let scrollPosition = $current.position().top + lyricArea.scrollTop() - ($(".lyric").height() / 2);
         lyricArea.stop().animate({ scrollTop: scrollPosition }, 1000);
     }
+
+    // 应用模糊层级
+    applyBlur(i);
+}
+
+// 渐变模糊处理
+function applyBlur(currentIndex) {
+    const items = $(".lrc-item");
+    const centerIndex = currentIndex;
+    const maxDistance = 6;  // 最大模糊层数（上下各几行）
+
+    items.each(function () {
+        const index = parseInt($(this).data("no"));
+        const distance = Math.abs(index - centerIndex);
+
+        if (distance === 0) {
+            $(this).css("filter", "none");
+        } else if (distance <= maxDistance) {
+            const blur = Math.min(maxBlur, (distance / maxDistance) * maxBlur);
+            $(this).css("filter", `blur(${blur}px)`);
+        } else {
+            $(this).css("filter", `blur(${maxBlur}px)`);
+        }
+    });
 }
 
 // 解析歌词
