@@ -1,4 +1,4 @@
-/* === 歌词模块样式（包含高亮动画） === */
+/* === 歌词模块样式（包含高亮动画 + 渐模糊） === */
 /* ikunmusic v0.1
  * Ajax 当前高亮歌词放大
  * 编写：季雨(https://github.com/jiyu3984/ikunmusic)
@@ -17,6 +17,18 @@
 /* 歌词行 */
 .lrc-item {
     margin: 10px 0;
+    transition: filter 0.6s ease;
+}
+
+/* 高亮所在整行不模糊 */
+.lrc-item .shell.lplaying,
+.lrc-item .trans-lyric.lplaying {
+    filter: none !important;
+}
+
+.lrc-item-playing {
+    filter: none !important;
+    z-index: 10;
 }
 
 /* 歌词内容 */
