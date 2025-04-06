@@ -11,7 +11,7 @@ var lyricArea = $("#lyric");    // 歌词显示容器
 var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 // 模糊等级参数（安卓弱，PC强）
-var maxBlur = isMobile ? 2 : 4;
+var maxBlur = isMobile ? 2 : 2; // PC模糊程度从4降低到2
 
 // 显示提示语（如歌词加载中、无歌词等）
 function lyricTip(str) {
