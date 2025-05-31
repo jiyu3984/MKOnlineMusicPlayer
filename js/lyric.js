@@ -3,6 +3,7 @@
  * 歌词解析及滚动模块（修复翻译高亮 & 滚动错位 + 动画 + 渐变模糊 + 3D倾斜）
  * 编写：mengkun | 修改：季雨
  * 时间：2017-9-13 / 2025-04
+ * 修复：歌词居中问题 + 长歌词显示问题
  *************************************************/
 
 var lyricArea = $("#lyric");    // 歌词显示容器
@@ -40,9 +41,9 @@ function lyricCallback(str, id, tstr) {
         if (!txt) txt = "&nbsp;";
         var li;
         if (!rem.tlyric[k] || rem.tlyric[k] === '') {
-            li = $("<li data-no='" + i + "' class='lrc-item'><span class='shell'>" + txt + "</span></li>");
+            li = $("<li data-no='" + i + "' class='lrc-item'><div class='lyric-wrapper'><span class='shell'>" + txt + "</span></div></li>");
         } else {
-            li = $("<li data-no='" + i + "' class='lrc-item'><span class='shell'>" + txt + "<br><span class='trans-lyric'>" + rem.tlyric[k] + "</span></span></li>");
+            li = $("<li data-no='" + i + "' class='lrc-item'><div class='lyric-wrapper'><span class='shell'>" + txt + "<br><span class='trans-lyric'>" + rem.tlyric[k] + "</span></span></div></li>");
         }
         lyricArea.append(li);
         i++;
@@ -90,9 +91,10 @@ function scrollLyric(time) {
     $current.find(".trans-lyric").addClass("lplaying");
     $current.addClass("lrc-item-playing");
 
-    // 滚动平滑
+    // 滚动平滑 - 修复居中问题
     if ($current.length > 0) {
-        let scrollPosition = $current.position().top + lyricArea.scrollTop() - ($(".lyric").height() / 2);
+        let containerHeight = lyricArea.height();
+        let scrollPosition = $current.position().top + lyricArea.scrollTop() - (containerHeight / 2) + ($current.height() / 2);
         lyricArea.stop().animate({ scrollTop: scrollPosition }, 1000);
     }
 
