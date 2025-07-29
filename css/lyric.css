@@ -1,10 +1,6 @@
-/* === 歌词模块样式（包含高亮动画 + 渐模糊 + 3D倾斜） === */
-/* ikunmusic v0.1
- * Ajax 当前高亮歌词放大
- * 编写：季雨(https://github.com/jiyu3984/ikunmusic)
- * 时间：2025-4-4
- * 修复：歌词居中问题 + 长歌词显示问题
- */
+/* === 歌词模块样式（高亮发光 + 渐模糊 + 3D倾斜） === */
+/* 作者：季雨 | 完整优化版 | 2025-07 */
+
 #lyric {
     text-align: center;
     font-family: "Helvetica Neue", sans-serif;
@@ -13,54 +9,51 @@
     color: #eee;
     font-size: 18px;
     overflow-y: auto;
-    perspective: 800px; /* 增加透视感 */
-    box-sizing: border-box; /* 确保padding计算正确 */
+    perspective: 800px;
+    box-sizing: border-box;
 }
 
 /* 歌词行 */
 .lrc-item {
     margin: 10px 0;
     transition: filter 0.6s ease, transform 0.6s ease;
-    transform-style: preserve-3d; /* 保持3D子元素效果 */
+    transform-style: preserve-3d;
     will-change: transform, filter;
     width: 100%;
     box-sizing: border-box;
+    overflow: visible !important; /* 防止柔光被裁切 */
+    border: none !important;
 }
 
-/* 歌词包装器 - 解决居中和长文本问题 */
+/* 歌词包装器 */
 .lyric-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     min-height: 1.8em;
-    padding: 0 15px; /* 左右留白，防止长歌词被遮挡 */
+    padding: 0 15px;
     box-sizing: border-box;
+    flex-direction: column;
+    text-align: center;
+    overflow: visible !important; /* 允许光晕溢出 */
 }
 
-/* 高亮所在整行不模糊 */
-.lrc-item .shell.lplaying,
-.lrc-item .trans-lyric.lplaying {
-    filter: none !important;
-}
-
-.lrc-item-playing {
-    filter: none !important;
-    z-index: 10;
-}
-
-/* 歌词内容 */
+/* 歌词文字 */
 .shell {
     display: inline-block;
     padding: 4px 8px;
     border-radius: 8px;
     transition: all 0.3s ease-in-out;
     max-width: 100%;
-    word-wrap: break-word; /* 长单词自动换行 */
-    word-break: break-word; /* 处理长单词 */
-    white-space: normal; /* 允许换行 */
+    word-wrap: normal;
+    word-break: normal;
+    white-space: normal;
+    overflow-wrap: normal;
     text-align: center;
-    box-sizing: border-box;
+    background: transparent;
+    line-height: 1.6em;
+    border: none !important;
 }
 
 /* 翻译歌词 */
@@ -70,73 +63,101 @@
     color: #aaa;
     margin-top: 4px;
     transition: all 0.3s ease;
-    word-wrap: break-word;
-    word-break: break-word;
-    white-space: normal;
     text-align: center;
-    max-width: 100%;
-    line-height: 1.4em;
+    line-height: 1.5em;
+    background: transparent;
 }
 
-/* 当前播放行的高亮动画 */
+/* 当前播放歌词文字高亮 + 柔光 */
 .shell.lplaying {
     color: #fff;
     font-weight: 600;
     background: none;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4), 0 0 16px rgba(255, 255, 255, 0.2);
+    /* 多层 text-shadow 制作柔光 */
+    text-shadow:
+        0 0 8px rgba(255, 255, 255, 0.6),
+        0 0 16px rgba(255, 255, 255, 0.4),
+        0 0 24px rgba(255, 255, 255, 0.25);
     transform: scale(1.1);
+    padding: 6px 10px; /* 防止光晕贴边被截断 */
     transition: all 0.4s ease;
-    z-index: 9999;
-    /* 确保放大时不被遮挡 */
     position: relative;
+    z-index: 9999;
 }
 
-/* 翻译部分的高亮样式 */
+/* 翻译文字高亮柔光 */
 .trans-lyric.lplaying {
     color: #fff;
     font-weight: 600;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4), 0 0 16px rgba(255, 255, 255, 0.2);
+    text-shadow:
+        0 0 6px rgba(255, 255, 255, 0.5),
+        0 0 12px rgba(255, 255, 255, 0.3),
+        0 0 18px rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
+    padding: 4px 8px; /* 修复光晕切边 */
     transition: all 0.4s ease;
-    z-index: 9999;
     position: relative;
+    z-index: 9999;
 }
 
-/* 响应式设计 - 移动设备优化 */
+/* 链接去样式 */
+#lyric a,
+#lyric a:hover,
+#lyric a:focus,
+#lyric a:active,
+#lyric a:visited {
+    color: inherit;
+    text-decoration: none !important;
+    border: none !important;
+    background: none;
+}
+
+#lyric li,
+#lyric ul,
+#lyric ol {
+    list-style: none;
+    border: none !important;
+    background: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* 移动端优化 */
 @media (max-width: 768px) {
     #lyric {
         font-size: 16px;
         padding: 15px 5px;
     }
-    
     .lyric-wrapper {
         padding: 0 10px;
     }
-    
     .shell, .trans-lyric {
         font-size: 14px;
     }
-    
     .trans-lyric {
         font-size: 12px;
     }
+    /* 移动端弱化柔光 */
+    .shell.lplaying {
+        text-shadow:
+            0 0 6px rgba(255, 255, 255, 0.5),
+            0 0 12px rgba(255, 255, 255, 0.3);
+    }
+    .trans-lyric.lplaying {
+        text-shadow:
+            0 0 4px rgba(255, 255, 255, 0.4),
+            0 0 8px rgba(255, 255, 255, 0.25);
+    }
 }
 
-/* 超小屏幕优化 */
 @media (max-width: 480px) {
     #lyric {
         font-size: 14px;
         padding: 10px 5px;
     }
-    
-    .lyric-wrapper {
-        padding: 0 8px;
-    }
-    
     .shell, .trans-lyric {
         font-size: 13px;
     }
-    
     .trans-lyric {
         font-size: 11px;
     }
