@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MK音乐协议测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #444;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-left: 4px solid #667eea;
+            padding-left: 10px;
+        }
+
+        .test-group {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .test-title {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .test-desc {
+            color: #777;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+
+        a.protocol-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        a.protocol-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .url-display {
+            background: #2d3748;
+            color: #a0aec0;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        .note-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+
+        .note-content {
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .success .note-title,
+        .success .note-content {
+            color: #155724;
+        }
+
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 MK音乐协议测试</h1>
+        <p class="subtitle">测试 mkmusic:// 自定义协议功能</p>
+
+        <div class="section">
+            <h2>播放歌曲测试</h2>
+
+            <div class="test-group">
+                <div class="test-title">测试 1: 播放网易云音乐</div>
+                <div class="test-desc">点击下方链接，应用将播放网易云音乐的指定歌曲</div>
+                <a href="mkmusic://play?id=436514312&source=netease" class="protocol-link">🎵 播放《告白气球》- 周杰伦</a>
+                <div class="url-display">mkmusic://play?id=436514312&source=netease</div>
+            </div>
+
+            <div class="test-group">
+                <div class="test-title">测试 2: 播放 QQ 音乐</div>
+                <div class="test-desc">点击下方链接，应用将播放 QQ 音乐的指定歌曲</div>
+                <a href="mkmusic://play?id=001JD1SR29d8YY&source=tencent" class="protocol-link">🎵 播放《演员》- 薛之谦</a>
+                <div class="url-display">mkmusic://play?id=001JD1SR29d8YY&source=tencent</div>
+            </div>
+
+            <div class="test-group">
+                <div class="test-title">测试 3: 播放酷狗音乐</div>
+                <div class="test-desc">点击下方链接，应用将播放酷狗音乐的指定歌曲</div>
+                <a href="mkmusic://play?id=3520362&source=kugou" class="protocol-link">🎵 播放《成都》- 赵雷</a>
+                <div class="url-display">mkmusic://play?id=3520362&source=kugou</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>搜索功能测试</h2>
+
+            <div class="test-group">
+                <div class="test-title">测试 4: 搜索歌手</div>
+                <div class="test-desc">点击下方链接，应用将搜索指定歌手</div>
+                <a href="mkmusic://search?keyword=%E5%91%A8%E6%9D%B0%E4%BC%A6" class="protocol-link">🔍 搜索"周杰伦"</a>
+                <a href="mkmusic://search?keyword=%E8%96%9B%E4%B9%8B%E8%B0%A6" class="protocol-link">🔍 搜索"薛之谦"</a>
+                <div class="url-display">mkmusic://search?keyword=%E5%91%A8%E6%9D%B0%E4%BC%A6</div>
+            </div>
+
+            <div class="test-group">
+                <div class="test-title">测试 5: 搜索歌曲</div>
+                <div class="test-desc">点击下方链接，应用将搜索指定歌曲</div>
+                <a href="mkmusic://search?keyword=%E5%91%8A%E7%99%BD%E6%B0%94%E7%90%83" class="protocol-link">🔍 搜索"告白气球"</a>
+                <a href="mkmusic://search?keyword=%E6%BC%94%E5%91%98" class="protocol-link">🔍 搜索"演员"</a>
+                <div class="url-display">mkmusic://search?keyword=%E5%91%8A%E7%99%BD%E6%B0%94%E7%90%83</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>歌单功能测试</h2>
+
+            <div class="test-group">
+                <div class="test-title">测试 6: 打开网易云歌单</div>
+                <div class="test-desc">点击下方链接，应用将打开指定歌单</div>
+                <a href="mkmusic://playlist?id=3778678&source=netease" class="protocol-link">📋 打开热门歌单</a>
+                <div class="url-display">mkmusic://playlist?id=3778678&source=netease</div>
+            </div>
+        </div>
+
+        <div class="note">
+            <div class="note-title">📝 使用说明</div>
+            <div class="note-content">
+                1. 首先安装并运行 MK音乐播放器桌面版<br>
+                2. 安装完成后，系统会自动注册 <code>mkmusic://</code> 协议<br>
+                3. 点击上方任意链接测试协议功能<br>
+                4. 如果协议无法打开，请重新安装应用
+            </div>
+        </div>
+
+        <div class="note success">
+            <div class="note-title">✅ 开发者测试</div>
+            <div class="note-content">
+                在开发模式下，可以使用命令行测试：<br>
+                <code>npm start</code> 启动应用后，点击上方链接测试
+            </div>
+        </div>
+    </div>
+</body>
+</html>

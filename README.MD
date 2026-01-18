@@ -6,6 +6,39 @@ MxuePlay是MKOnlineMusicPlayer的优化版，MKOnlineMusicPlayer 是一款开源
 
 > 本项目仅为学习前端的练手之作，请勿用作商业用途，请勿通过本项目下载盗版歌曲资源，否则后果自负！
 
+### 🎉 新功能：Electron 桌面版
+-----
+现已支持打包为桌面应用！
+
+**特性**:
+- ✨ 支持 Windows、macOS、Linux 三大平台
+- 🔗 支持自定义 URL 协议 `mkmusic://`（可通过网页链接直接打开应用）
+- 📦 一键打包成安装程序
+- 💻 原生桌面应用体验
+
+**快速开始**:
+```bash
+# 安装依赖
+npm install
+
+# 启动开发模式
+npm start
+
+# 构建 Windows 安装包
+npm run build:win
+
+# 构建 macOS 安装包
+npm run build:mac
+
+# 构建 Linux 安装包
+npm run build:linux
+```
+
+**详细文档**:
+- [快速开始指南](QUICK_START.md) - 新手入门
+- [Electron 详细文档](ELECTRON_README.md) - 完整功能说明
+- [协议测试页面](protocol-test.html) - 测试自定义协议
+
 ### 界面欣赏
 -----
 ![主界面(电脑端)](https://user-images.githubusercontent.com/35069089/52914931-e9655d00-3308-11e9-8347-a1f9be614e10.png)
