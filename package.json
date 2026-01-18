@@ -11,7 +11,15 @@
     "build:win": "electron-builder --win --x64",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
-    "build:all": "electron-builder -mwl"
+    "build:all": "electron-builder -mwl",
+    "cap:init": "cap init",
+    "cap:add:android": "cap add android",
+    "cap:add:ios": "cap add ios",
+    "cap:sync": "cap sync",
+    "cap:open:android": "cap open android",
+    "cap:open:ios": "cap open ios",
+    "build:android": "cap sync && cap copy && cap open android",
+    "serve": "http-server -p 8080"
   },
   "keywords": [
     "music",
@@ -24,10 +32,19 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "@capacitor/cli": "^5.5.0",
+    "http-server": "^14.1.1"
   },
   "dependencies": {
-    "electron-store": "^8.1.0"
+    "electron-store": "^8.1.0",
+    "@capacitor/core": "^5.5.0",
+    "@capacitor/android": "^5.5.0",
+    "@capacitor/ios": "^5.5.0",
+    "@capacitor/app": "^5.0.6",
+    "@capacitor/browser": "^5.1.0",
+    "@capacitor/storage": "^1.2.5",
+    "@capacitor/network": "^5.0.6"
   },
   "build": {
     "appId": "com.mkmusic.player",

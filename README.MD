@@ -39,6 +39,40 @@ npm run build:linux
 - [Electron 详细文档](ELECTRON_README.md) - 完整功能说明
 - [协议测试页面](protocol-test.html) - 测试自定义协议
 
+### 📱 新功能：Android/iOS 移动应用
+-----
+现已支持打包为原生移动应用！
+
+**特性**:
+- 📱 支持 Android 和 iOS 平台
+- 🔗 支持深度链接 `mkmusic://`（可通过网页直接打开应用）
+- 🎨 移动端专属优化界面
+- 💾 本地存储支持
+- 🌐 网络状态检测
+
+**快速开始**:
+```bash
+# 安装依赖
+npm install
+
+# 添加 Android 平台
+npx cap add android
+
+# 同步代码到 Android
+npx cap sync
+
+# 打开 Android Studio 构建
+npx cap open android
+```
+
+**详细文档**:
+- [Android 构建指南](ANDROID_BUILD.md) - 完整构建教程
+- [移动端 API 配置](MOBILE_API_SETUP.md) - API 服务器配置
+
+**注意事项**:
+- Android/iOS 应用需要配置远程 API 服务器（无法运行 PHP）
+- 详细配置请参考 [MOBILE_API_SETUP.md](MOBILE_API_SETUP.md)
+
 ### 界面欣赏
 -----
 ![主界面(电脑端)](https://user-images.githubusercontent.com/35069089/52914931-e9655d00-3308-11e9-8347-a1f9be614e10.png)

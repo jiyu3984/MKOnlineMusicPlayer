@@ -41,4 +41,15 @@ jscoverage_lib/
 bower_components/
 dist/
 
+# Capacitor / Mobile
+android/
+ios/
+capacitor.js
+.capacitor/
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+
 .user.ini

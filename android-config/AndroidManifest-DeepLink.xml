@@ -1,0 +1,46 @@
+<!--
+  Android 深度链接配置示例
+
+  将以下代码添加到 android/app/src/main/AndroidManifest.xml
+  在 <activity> 标签内的 <intent-filter> 后添加
+-->
+
+<!-- Deep Link for mkmusic:// protocol -->
+<intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+
+    <!-- mkmusic:// 自定义协议 -->
+    <data android:scheme="mkmusic" />
+</intent-filter>
+
+<!-- App Links for https URLs (可选) -->
+<intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+
+    <!-- 如果您有自己的域名，可以配置 https 链接 -->
+    <!-- <data android:scheme="https" android:host="music.example.com" /> -->
+</intent-filter>
+
+<!-- 完整示例: -->
+<!--
+<activity
+    android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+    android:name="com.mkmusic.player.MainActivity"
+    android:label="@string/title_activity_main"
+    android:theme="@style/AppTheme.NoActionBarLaunch"
+    android:launchMode="singleTask"
+    android:exported="true">
+
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+
+    将上面的深度链接配置添加到这里
+
+</activity>
+-->

@@ -34,6 +34,9 @@
     <!-- jQuery文件 -->
     <script src="js/jquery.min.js"></script>
 
+    <!-- 移动端配置 -->
+    <script src="mobile-config.js"></script>
+
     <!-- layui样式文件 -->
     <link rel="stylesheet" href="plugns/layui/css/layui.css">
 
@@ -48,6 +51,13 @@
 
     <!-- 小屏幕样式修复 -->
     <link rel="stylesheet" type="text/css" href="css/small.css">
+
+    <!-- 移动端应用样式（仅在 Capacitor 环境加载） -->
+    <script>
+        if (window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:') {
+            document.write('<link rel="stylesheet" type="text/css" href="css/mobile-app.css">');
+        }
+    </script>
 
     <!-- 自定义css样式 -->
     <style>
@@ -171,6 +181,25 @@
 
 <!-- Electron 协议处理器 -->
 <script src="electron/protocol-handler.js"></script>
+
+<!-- Capacitor 核心 (仅在移动端加载) -->
+<script type="module">
+    // 检测是否在 Capacitor 环境中
+    if (window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:') {
+        // 动态加载 Capacitor 脚本
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = 'capacitor.js';
+        document.head.appendChild(script);
+
+        // 加载 Capacitor 应用脚本
+        script.onload = () => {
+            const appScript = document.createElement('script');
+            appScript.src = 'capacitor/capacitor-app.js';
+            document.head.appendChild(appScript);
+        };
+    }
+</script>
 
 <!-- 自定义js -->
 <script>

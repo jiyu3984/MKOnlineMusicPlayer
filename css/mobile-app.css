@@ -1,0 +1,186 @@
+/**
+ * 移动端应用专用样式
+ * 仅在 Capacitor 环境中生效
+ */
+
+/* 安全区域适配（刘海屏、底部虚拟按键等） */
+body {
+  /* iOS 安全区域 */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* 防止内容被状态栏遮挡 */
+.header {
+  padding-top: calc(env(safe-area-inset-top) + 10px);
+}
+
+/* 防止底部播放控制被遮挡 */
+.footer {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 10px);
+}
+
+/* 禁用文本选择（改善移动端体验） */
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 允许输入框选择 */
+input,
+textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* 优化触摸反馈 */
+a,
+button,
+.btn,
+.player-btn {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  transition: opacity 0.2s;
+}
+
+a:active,
+button:active,
+.btn:active,
+.player-btn:active {
+  opacity: 0.7;
+}
+
+/* 优化滚动性能 */
+.data-area,
+.music-list,
+.lyric {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+}
+
+/* 全屏优化 */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 状态栏样式（深色/浅色） */
+@media (prefers-color-scheme: dark) {
+  /* 深色模式适配 */
+}
+
+/* 横屏适配 */
+@media (orientation: landscape) {
+  /* 横屏时的特殊样式 */
+}
+
+/* 加载指示器 */
+.capacitor-loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+}
+
+/* 网络状态提示 */
+.network-offline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #f44336;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  z-index: 9999;
+  font-size: 14px;
+}
+
+/* 优化按钮大小（更易点击） */
+.player-btn {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* 优化列表项高度 */
+.music-list li {
+  min-height: 60px;
+  padding: 10px 15px;
+}
+
+/* 优化输入框 */
+input[type="text"],
+input[type="search"] {
+  font-size: 16px; /* 防止 iOS 自动缩放 */
+}
+
+/* 启动画面 */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  transition: opacity 0.3s;
+}
+
+.splash-screen.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-screen .logo {
+  font-size: 48px;
+  color: white;
+  font-weight: bold;
+}
+
+/* 底部导航栏适配 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .footer .container {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 禁用双击缩放 */
+* {
+  touch-action: manipulation;
+}
+
+/* 优化歌词显示 */
+.lyric ul {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 100px);
+}
+
+/* 移动端特殊优化 */
+@media (max-width: 768px) {
+  /* 增大点击区域 */
+  .music-list li .operation a {
+    padding: 10px;
+  }
+
+  /* 优化封面大小 */
+  .player .cover {
+    max-width: 100%;
+    padding: 20px;
+  }
+
+  /* 优化进度条 */
+  .progress .mkpgb-area {
+    height: 6px;
+  }
+}

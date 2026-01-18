@@ -1,0 +1,35 @@
+{
+  "appId": "com.mkmusic.player",
+  "appName": "MK音乐播放器",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true,
+    "allowNavigation": [
+      "*"
+    ]
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "",
+      "keystoreAlias": ""
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#1a1a1a",
+      "showSpinner": true,
+      "androidSpinnerStyle": "large",
+      "spinnerColor": "#667eea"
+    },
+    "App": {
+      "url": {
+        "allowNavigations": [
+          "mkmusic://*"
+        ]
+      }
+    }
+  }
+}
