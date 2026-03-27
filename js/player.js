@@ -33,6 +33,7 @@ var mkPlayer = {
 
 // 存储全局变量
 var rem = [];
+rem.source = "netease";  // 默认音乐源
 
 // 音频错误处理函数
 function audioErr() {

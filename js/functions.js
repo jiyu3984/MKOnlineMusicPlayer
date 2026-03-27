@@ -402,7 +402,7 @@ function searchSubmit() {
         $("#search-wd").focus();
         return false;
     }
-    rem.source = $("#music-source input[name='source']:checked").val();
+    rem.source = $("#music-source input[name='source']:checked").val() || "netease";
     
     layer.closeAll('page');     // 关闭搜索框
     
