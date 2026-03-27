@@ -1394,8 +1394,7 @@ class Meting
 
     private function kugou_web_url($hash)
     {
-        $debug = defined('DEBUG') && DEBUG === true;
-        $debug_log = array('hash' => $hash);
+        $debug_log = array('hash' => $hash, 'time' => date('Y-m-d H:i:s'));
 
         // 保存原始 header，web API 需要浏览器 UA
         $original_header = $this->header;
@@ -1421,9 +1420,7 @@ class Meting
         $song_raw = $this->exec($song_api);
         $song_data = json_decode($song_raw, true);
 
-        if ($debug) {
-            $debug_log['step1_getSongInfo'] = $song_data;
-        }
+        $debug_log['step1_getSongInfo'] = $song_data;
 
         // getSongInfo 响应可能嵌套在 data 下
         $info = $song_data;
@@ -1437,9 +1434,7 @@ class Meting
         } elseif (isset($info['EMixSongID'])) {
             $encode_id = $info['EMixSongID'];
         }
-        if ($debug) {
-            $debug_log['encode_id'] = $encode_id;
-        }
+        $debug_log['encode_id'] = $encode_id;
 
         if ($encode_id) {
             // 调用酷狗网页版 songinfo API
@@ -1466,9 +1461,7 @@ class Meting
             $songinfo_raw = $this->exec($api);
             $result = json_decode($songinfo_raw, true);
 
-            if ($debug) {
-                $debug_log['step2_songinfo'] = $result;
-            }
+            $debug_log['step2_songinfo'] = $result;
 
             if (isset($result['data']['play_url']) && $result['data']['play_url']) {
                 $url = $result['data']['play_url'];
@@ -1478,10 +1471,8 @@ class Meting
 
             if (isset($url)) {
                 $this->header = $original_header;
-                if ($debug) {
-                    $debug_log['result'] = 'success';
-                    file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                }
+                $debug_log['result'] = 'success';
+                @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
                 return json_encode(array(
                     'url'  => $url,
                     'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
@@ -1490,10 +1481,8 @@ class Meting
             }
         }
 
-        if ($debug) {
-            $debug_log['result'] = 'fallback';
-            file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        }
+        $debug_log['result'] = 'fallback';
+        @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
         // web API 失败，回退到原有 get_res_privilege 接口
         $this->header = $original_header;
