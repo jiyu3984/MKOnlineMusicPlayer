@@ -1394,7 +1394,12 @@ class Meting
 
     private function kugou_web_url($hash)
     {
-        $empty = json_encode(array('url' => '', 'size' => 0, 'br' => -1));
+        // 保存原始 header，web API 需要浏览器 UA
+        $original_header = $this->header;
+        $this->header = array(
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+            'Referer'    => 'https://www.kugou.com/',
+        );
 
         // 先通过 hash 获取 encode_album_audio_id
         $song_api = array(
@@ -1415,42 +1420,65 @@ class Meting
             $encode_id = $song_data['EMixSongID'];
         }
 
-        if (!$encode_id) {
-            return $empty;
+        if ($encode_id) {
+            // 调用酷狗网页版 songinfo API
+            $params = array(
+                'srcappid'              => '2919',
+                'clientver'             => '20000',
+                'clienttime'            => strval(round(microtime(true) * 1000)),
+                'mid'                   => $this->kugou_mid,
+                'uuid'                  => $this->kugou_mid,
+                'dfid'                  => $this->kugou_dfid,
+                'appid'                 => '1014',
+                'platid'                => '4',
+                'encode_album_audio_id' => $encode_id,
+                'token'                 => $this->kugou_token,
+                'userid'                => $this->kugou_userid,
+            );
+            $params['signature'] = $this->kugou_sign($params);
+
+            $api = array(
+                'method' => 'GET',
+                'url'    => 'https://wwwapi.kugou.com/play/songinfo',
+                'body'   => $params,
+            );
+            $result = json_decode($this->exec($api), true);
+
+            if (isset($result['data']['play_url']) && $result['data']['play_url']) {
+                $this->header = $original_header;
+                return json_encode(array(
+                    'url'  => $result['data']['play_url'],
+                    'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
+                    'br'   => isset($result['data']['bitrate']) ? $result['data']['bitrate'] : 128,
+                ));
+            }
         }
 
-        // 调用酷狗网页版 songinfo API
-        $params = array(
-            'srcappid'              => '2919',
-            'clientver'             => '20000',
-            'clienttime'            => strval(round(microtime(true) * 1000)),
-            'mid'                   => $this->kugou_mid,
-            'uuid'                  => $this->kugou_mid,
-            'dfid'                  => $this->kugou_dfid,
-            'appid'                 => '1014',
-            'platid'                => '4',
-            'encode_album_audio_id' => $encode_id,
-            'token'                 => $this->kugou_token,
-            'userid'                => $this->kugou_userid,
+        // web API 失败，回退到原有 get_res_privilege 接口
+        $this->header = $original_header;
+        $fallback_api = array(
+            'method' => 'POST',
+            'url'    => 'http://media.store.kugou.com/v1/get_res_privilege',
+            'body'   => json_encode(
+                array(
+                'relate'    => 1,
+                'userid'    => '0',
+                'vip'       => 0,
+                'appid'     => 1000,
+                'token'     => '',
+                'behavior'  => 'download',
+                'area_code' => '1',
+                'clientver' => '8990',
+                'resource'  => array(array(
+                    'id'   => 0,
+                    'type' => 'audio',
+                    'hash' => $hash,
+                )), )
+            ),
+            'decode' => 'kugou_url',
         );
-        $params['signature'] = $this->kugou_sign($params);
-
-        $api = array(
-            'method' => 'GET',
-            'url'    => 'https://wwwapi.kugou.com/play/songinfo',
-            'body'   => $params,
-        );
-        $result = json_decode($this->exec($api), true);
-
-        if (isset($result['data']['play_url']) && $result['data']['play_url']) {
-            return json_encode(array(
-                'url'  => $result['data']['play_url'],
-                'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
-                'br'   => isset($result['data']['bitrate']) ? $result['data']['bitrate'] : 128,
-            ));
-        }
-
-        return $empty;
+        $this->temp['br'] = isset($this->temp['br']) ? $this->temp['br'] : 320;
+        return $this->exec($fallback_api);
     }
 
     private function baidu_url($result)
