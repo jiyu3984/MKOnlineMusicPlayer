@@ -47,6 +47,15 @@ class Meting
         return $this;
     }
 
+    public function kugouVip($userid, $token, $vip = 1)
+    {
+        $this->kugou_userid = $userid;
+        $this->kugou_token = $token;
+        $this->kugou_vip = $vip;
+
+        return $this;
+    }
+
     public function format($value = true)
     {
         $this->format = $value;
@@ -701,10 +710,10 @@ class Meting
                 'body'   => json_encode(
                     array(
                     'relate'    => 1,
-                    'userid'    => '0',
-                    'vip'       => 0,
+                    'userid'    => isset($this->kugou_userid) ? $this->kugou_userid : '0',
+                    'vip'       => isset($this->kugou_vip) ? $this->kugou_vip : 0,
                     'appid'     => 1000,
-                    'token'     => '',
+                    'token'     => isset($this->kugou_token) ? $this->kugou_token : '',
                     'behavior'  => 'download',
                     'area_code' => '1',
                     'clientver' => '8990',
