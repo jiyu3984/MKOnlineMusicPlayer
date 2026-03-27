@@ -1417,18 +1417,28 @@ class Meting
         );
 
         // 直接使用 play/getdata API（接受 hash，无需 encode_album_audio_id）
-        $params = array(
-            'r'          => 'play/getdata',
-            'hash'       => $hash,
-            'dfid'       => $this->kugou_dfid,
+        $clienttime = strval(round(microtime(true) * 1000));
+        $sign_params = array(
             'appid'      => '1014',
+            'clienttime' => $clienttime,
+            'clientver'  => '20000',
+            'dfid'       => $this->kugou_dfid,
+            'hash'       => $hash,
             'mid'        => $this->kugou_mid,
             'platid'     => '4',
-            'album_id'   => 'empty',
+            'srcappid'   => '2919',
             'token'      => $this->kugou_token,
             'userid'     => $this->kugou_userid,
-            '_'          => strval(round(microtime(true) * 1000)),
+            'uuid'       => $this->kugou_mid,
         );
+        $signature = $this->kugou_sign($sign_params);
+
+        $params = array_merge($sign_params, array(
+            'r'          => 'play/getdata',
+            'album_id'   => 'empty',
+            '_'          => $clienttime,
+            'signature'  => $signature,
+        ));
 
         $api = array(
             'method' => 'GET',
