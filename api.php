@@ -75,8 +75,9 @@ switch($types)   // 根据请求的 Api，执行相应操作
 {
     case 'url':   // 获取歌曲链接
         $id = getParam('id');  // 歌曲ID
-        
-        $data = $API->url($id);
+        $url_id = getParam('url_id');  // 链接ID（酷狗用 encode_album_audio_id）
+
+        $data = $API->url($url_id ? $url_id : $id);
         
         echojson($data);
         break;

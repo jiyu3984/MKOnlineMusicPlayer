@@ -1401,52 +1401,63 @@ class Meting
         return md5($str);
     }
 
-    private function kugou_web_url($hash)
+    private function kugou_web_url($id)
     {
-        $debug_log = array('hash' => $hash, 'time' => date('Y-m-d H:i:s'));
+        $debug_log = array('id' => $id, 'time' => date('Y-m-d H:i:s'));
 
-        // 保存原始 header，web API 需要浏览器 UA + Cookie
+        // 判断 id 是 hash（32位十六进制）还是 encode_album_audio_id
+        $is_hash = (bool) preg_match('/^[0-9a-fA-F]{32}$/', $id);
+        $debug_log['is_hash'] = $is_hash;
+
+        if ($is_hash) {
+            // 没有 encode_album_audio_id，直接回退
+            $debug_log['result'] = 'no_encode_id_fallback';
+            @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+            $this->temp['br'] = isset($this->temp['br']) ? $this->temp['br'] : 320;
+            $fallback_api = array(
+                'method' => 'POST',
+                'url'    => 'http://media.store.kugou.com/v1/get_res_privilege',
+                'body'   => json_encode(array(
+                    'relate' => 1, 'userid' => '0', 'vip' => 0, 'appid' => 1000,
+                    'token' => '', 'behavior' => 'download', 'area_code' => '1',
+                    'clientver' => '8990',
+                    'resource' => array(array('id' => 0, 'type' => 'audio', 'hash' => $id)),
+                )),
+                'decode' => 'kugou_url',
+            );
+            return $this->exec($fallback_api);
+        }
+
+        // 有 encode_album_audio_id，使用 songinfo API
         $original_header = $this->header;
-        $cookie = 'kg_mid=' . $this->kugou_mid . '; kg_dfid=' . $this->kugou_dfid
-            . '; KugooID=' . $this->kugou_userid . '; t=' . $this->kugou_token
-            . '; mid=' . $this->kugou_mid . '; dfid=' . $this->kugou_dfid;
         $this->header = array(
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
             'Referer'    => 'https://www.kugou.com/',
-            'Cookie'     => $cookie,
         );
 
-        // 直接使用 play/getdata API（接受 hash，无需 encode_album_audio_id）
-        $clienttime = strval(round(microtime(true) * 1000));
-        $sign_params = array(
-            'appid'      => '1014',
-            'clienttime' => $clienttime,
-            'clientver'  => '20000',
-            'dfid'       => $this->kugou_dfid,
-            'hash'       => $hash,
-            'mid'        => $this->kugou_mid,
-            'platid'     => '4',
-            'srcappid'   => '2919',
-            'token'      => $this->kugou_token,
-            'userid'     => $this->kugou_userid,
-            'uuid'       => $this->kugou_mid,
+        $params = array(
+            'srcappid'              => '2919',
+            'clientver'             => '20000',
+            'clienttime'            => strval(round(microtime(true) * 1000)),
+            'mid'                   => $this->kugou_mid,
+            'uuid'                  => $this->kugou_mid,
+            'dfid'                  => $this->kugou_dfid,
+            'appid'                 => '1014',
+            'platid'                => '4',
+            'encode_album_audio_id' => $id,
+            'token'                 => $this->kugou_token,
+            'userid'                => $this->kugou_userid,
         );
-        $signature = $this->kugou_sign($sign_params);
-
-        $params = array_merge($sign_params, array(
-            'r'          => 'play/getdata',
-            'album_id'   => 'empty',
-            '_'          => $clienttime,
-            'signature'  => $signature,
-        ));
+        $params['signature'] = $this->kugou_sign($params);
 
         $api = array(
             'method' => 'GET',
-            'url'    => 'https://wwwapi.kugou.com/yy/index.php',
+            'url'    => 'https://wwwapi.kugou.com/play/songinfo',
             'body'   => $params,
         );
         $result = json_decode($this->exec($api), true);
-        $debug_log['play_getdata'] = $result;
+        $debug_log['songinfo'] = $result;
 
         if (isset($result['data']['play_url']) && $result['data']['play_url']) {
             $url = $result['data']['play_url'];
@@ -1465,34 +1476,11 @@ class Meting
             ));
         }
 
-        $debug_log['result'] = 'fallback';
+        $debug_log['result'] = 'songinfo_failed';
         @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-        // web API 失败，回退到原有 get_res_privilege 接口
         $this->header = $original_header;
-        $fallback_api = array(
-            'method' => 'POST',
-            'url'    => 'http://media.store.kugou.com/v1/get_res_privilege',
-            'body'   => json_encode(
-                array(
-                'relate'    => 1,
-                'userid'    => '0',
-                'vip'       => 0,
-                'appid'     => 1000,
-                'token'     => '',
-                'behavior'  => 'download',
-                'area_code' => '1',
-                'clientver' => '8990',
-                'resource'  => array(array(
-                    'id'   => 0,
-                    'type' => 'audio',
-                    'hash' => $hash,
-                )), )
-            ),
-            'decode' => 'kugou_url',
-        );
-        $this->temp['br'] = isset($this->temp['br']) ? $this->temp['br'] : 320;
-        return $this->exec($fallback_api);
+        return json_encode(array('url' => '', 'size' => 0, 'br' => -1));
     }
 
     private function baidu_url($result)
@@ -1808,12 +1796,17 @@ class Meting
 
     protected function format_kugou($data)
     {
+        // 优先使用 EMixSongID 作为 url_id（用于酷狗 VIP 播放）
+        $url_id = $data['hash'];
+        if (isset($data['EMixSongID']) && $data['EMixSongID']) {
+            $url_id = $data['EMixSongID'];
+        }
         $result = array(
             'id'       => $data['hash'],
             'name'     => isset($data['filename']) ? $data['filename'] : $data['fileName'],
             'artist'   => array(),
             'album'    => isset($data['album_name']) ? $data['album_name'] : '',
-            'url_id'   => $data['hash'],
+            'url_id'   => $url_id,
             'pic_id'   => $data['hash'],
             'lyric_id' => $data['hash'],
             'source'   => 'kugou',
