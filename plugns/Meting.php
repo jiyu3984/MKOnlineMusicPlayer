@@ -1397,7 +1397,7 @@ class Meting
     {
         $debug_log = array('hash' => $hash, 'time' => date('Y-m-d H:i:s'));
 
-        // 保存原始 header，web API 需要浏览器 UA
+        // 保存原始 header，web API 需要浏览器 UA + Cookie
         $original_header = $this->header;
         $cookie = 'kg_mid=' . $this->kugou_mid . '; kg_dfid=' . $this->kugou_dfid
             . '; KugooID=' . $this->kugou_userid . '; t=' . $this->kugou_token
@@ -1408,78 +1408,41 @@ class Meting
             'Cookie'     => $cookie,
         );
 
-        // 先通过 hash 获取 encode_album_audio_id
-        $song_api = array(
-            'method' => 'POST',
-            'url'    => 'http://m.kugou.com/app/i/getSongInfo.php',
-            'body'   => array(
-                'cmd'  => 'playInfo',
-                'hash' => $hash,
-                'from' => 'mkugou',
-            ),
+        // 直接使用 play/getdata API（接受 hash，无需 encode_album_audio_id）
+        $params = array(
+            'r'          => 'play/getdata',
+            'hash'       => $hash,
+            'dfid'       => $this->kugou_dfid,
+            'appid'      => '1014',
+            'mid'        => $this->kugou_mid,
+            'platid'     => '4',
+            'album_id'   => 'empty',
+            '_'          => strval(round(microtime(true) * 1000)),
         );
-        $song_raw = $this->exec($song_api);
-        $song_data = json_decode($song_raw, true);
 
-        $debug_log['step1_getSongInfo'] = $song_data;
+        $api = array(
+            'method' => 'GET',
+            'url'    => 'https://wwwapi.kugou.com/yy/index.php',
+            'body'   => $params,
+        );
+        $result = json_decode($this->exec($api), true);
+        $debug_log['play_getdata'] = $result;
 
-        // getSongInfo 响应可能嵌套在 data 下
-        $info = $song_data;
-        if (isset($song_data['data']) && is_array($song_data['data'])) {
-            $info = $song_data['data'];
+        if (isset($result['data']['play_url']) && $result['data']['play_url']) {
+            $url = $result['data']['play_url'];
+        } elseif (isset($result['data']['play_backup_url']) && $result['data']['play_backup_url']) {
+            $url = $result['data']['play_backup_url'];
         }
 
-        $encode_id = '';
-        if (isset($info['encode_album_audio_id'])) {
-            $encode_id = $info['encode_album_audio_id'];
-        } elseif (isset($info['EMixSongID'])) {
-            $encode_id = $info['EMixSongID'];
-        }
-        $debug_log['encode_id'] = $encode_id;
-
-        if ($encode_id) {
-            // 调用酷狗网页版 songinfo API
-            $params = array(
-                'srcappid'              => '2919',
-                'clientver'             => '20000',
-                'clienttime'            => strval(round(microtime(true) * 1000)),
-                'mid'                   => $this->kugou_mid,
-                'uuid'                  => $this->kugou_mid,
-                'dfid'                  => $this->kugou_dfid,
-                'appid'                 => '1014',
-                'platid'                => '4',
-                'encode_album_audio_id' => $encode_id,
-                'token'                 => $this->kugou_token,
-                'userid'                => $this->kugou_userid,
-            );
-            $params['signature'] = $this->kugou_sign($params);
-
-            $api = array(
-                'method' => 'GET',
-                'url'    => 'https://wwwapi.kugou.com/play/songinfo',
-                'body'   => $params,
-            );
-            $songinfo_raw = $this->exec($api);
-            $result = json_decode($songinfo_raw, true);
-
-            $debug_log['step2_songinfo'] = $result;
-
-            if (isset($result['data']['play_url']) && $result['data']['play_url']) {
-                $url = $result['data']['play_url'];
-            } elseif (isset($result['data']['play_backup_url']) && $result['data']['play_backup_url']) {
-                $url = $result['data']['play_backup_url'];
-            }
-
-            if (isset($url)) {
-                $this->header = $original_header;
-                $debug_log['result'] = 'success';
-                @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                return json_encode(array(
-                    'url'  => $url,
-                    'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
-                    'br'   => isset($result['data']['bitrate']) ? $result['data']['bitrate'] : 128,
-                ));
-            }
+        if (isset($url) && $url) {
+            $this->header = $original_header;
+            $debug_log['result'] = 'success';
+            @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            return json_encode(array(
+                'url'  => $url,
+                'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
+                'br'   => isset($result['data']['bitrate']) ? $result['data']['bitrate'] : 128,
+            ));
         }
 
         $debug_log['result'] = 'fallback';
