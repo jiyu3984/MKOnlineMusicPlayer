@@ -1413,11 +1413,18 @@ class Meting
         );
         $song_raw = $this->exec($song_api);
         $song_data = json_decode($song_raw, true);
+
+        // getSongInfo 响应可能嵌套在 data 下
+        $info = $song_data;
+        if (isset($song_data['data']) && is_array($song_data['data'])) {
+            $info = $song_data['data'];
+        }
+
         $encode_id = '';
-        if (isset($song_data['encode_album_audio_id'])) {
-            $encode_id = $song_data['encode_album_audio_id'];
-        } elseif (isset($song_data['EMixSongID'])) {
-            $encode_id = $song_data['EMixSongID'];
+        if (isset($info['encode_album_audio_id'])) {
+            $encode_id = $info['encode_album_audio_id'];
+        } elseif (isset($info['EMixSongID'])) {
+            $encode_id = $info['EMixSongID'];
         }
 
         if ($encode_id) {
@@ -1445,9 +1452,15 @@ class Meting
             $result = json_decode($this->exec($api), true);
 
             if (isset($result['data']['play_url']) && $result['data']['play_url']) {
+                $url = $result['data']['play_url'];
+            } elseif (isset($result['data']['play_backup_url']) && $result['data']['play_backup_url']) {
+                $url = $result['data']['play_backup_url'];
+            }
+
+            if (isset($url)) {
                 $this->header = $original_header;
                 return json_encode(array(
-                    'url'  => $result['data']['play_url'],
+                    'url'  => $url,
                     'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
                     'br'   => isset($result['data']['bitrate']) ? $result['data']['bitrate'] : 128,
                 ));
