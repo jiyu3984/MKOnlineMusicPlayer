@@ -1699,14 +1699,22 @@ class Meting
             return json_encode(array('lyric' => '', 'tlyric' => ''), JSON_UNESCAPED_UNICODE);
         }
 
-        // 下载原文歌词
+        // 下载歌词（优先选有 language 标记的候选，包含翻译信息）
+        $best = $result['candidates'][0];
+        foreach ($result['candidates'] as $candidate) {
+            if (isset($candidate['language']) && $candidate['language']) {
+                $best = $candidate;
+                break;
+            }
+        }
+
         $api = array(
             'method' => 'GET',
             'url'    => 'http://lyrics.kugou.com/download',
             'body'   => array(
                 'charset'   => 'utf8',
-                'accesskey' => $result['candidates'][0]['accesskey'],
-                'id'        => $result['candidates'][0]['id'],
+                'accesskey' => $best['accesskey'],
+                'id'        => $best['id'],
                 'client'    => 'mobi',
                 'fmt'       => 'lrc',
                 'ver'       => 1,
@@ -1715,46 +1723,18 @@ class Meting
         $data = json_decode($this->exec($api), true);
         $lyric = isset($data['content']) ? base64_decode($data['content']) : '';
 
-        // 查找翻译歌词候选（language 含 1 表示有翻译）
+        // 从 info 字段提取翻译（base64 编码的 JSON，type=1 为翻译）
         $tlyric = '';
-        foreach ($result['candidates'] as $candidate) {
-            if (isset($candidate['language']) && $candidate['language']) {
-                $tapi = array(
-                    'method' => 'GET',
-                    'url'    => 'http://lyrics.kugou.com/download',
-                    'body'   => array(
-                        'charset'   => 'utf8',
-                        'accesskey' => $candidate['accesskey'],
-                        'id'        => $candidate['id'],
-                        'client'    => 'mobi',
-                        'fmt'       => 'lrc',
-                        'ver'       => 1,
-                    ),
-                );
-                $tdata = json_decode($this->exec($tapi), true);
-                // 翻译信息在 content 的 language 字段中（base64 编码的 JSON）
-                if (isset($tdata['content'])) {
-                    $decoded = base64_decode($tdata['content']);
-                    // 如果这个候选和第一个不同，可能是翻译版本
-                    if ($decoded !== $lyric && $candidate !== $result['candidates'][0]) {
-                        $tlyric = $decoded;
+        if (isset($data['info']) && $data['info']) {
+            $info = base64_decode($data['info']);
+            $info_data = json_decode($info, true);
+            if (is_array($info_data)) {
+                foreach ($info_data as $lang_item) {
+                    if (isset($lang_item['content']) && isset($lang_item['type']) && $lang_item['type'] == 1) {
+                        $tlyric = base64_decode($lang_item['content']);
                         break;
                     }
                 }
-                // 检查是否有内嵌的翻译信息
-                if (isset($tdata['info']) && $tdata['info']) {
-                    $info = base64_decode($tdata['info']);
-                    $info_data = json_decode($info, true);
-                    if (is_array($info_data)) {
-                        foreach ($info_data as $lang_item) {
-                            if (isset($lang_item['content']) && isset($lang_item['type']) && $lang_item['type'] == 1) {
-                                $tlyric = base64_decode($lang_item['content']);
-                                break 2;
-                            }
-                        }
-                    }
-                }
-                break;
             }
         }
 
