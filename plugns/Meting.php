@@ -1723,11 +1723,13 @@ class Meting
         $data = json_decode($this->exec($api), true);
         $lyric = isset($data['content']) ? base64_decode($data['content']) : '';
 
-        // 从 info 字段提取翻译（base64 编码的 JSON，type=1 为翻译）
+        // 从 info 字段提取翻译
         $tlyric = '';
         if (isset($data['info']) && $data['info']) {
-            $info = base64_decode($data['info']);
-            $info_data = json_decode($info, true);
+            $info_raw = base64_decode($data['info']);
+            // 临时调试
+            @file_put_contents('cache/kugou_lyric_info.json', $info_raw);
+            $info_data = json_decode($info_raw, true);
             if (is_array($info_data)) {
                 foreach ($info_data as $lang_item) {
                     if (isset($lang_item['content']) && isset($lang_item['type']) && $lang_item['type'] == 1) {
