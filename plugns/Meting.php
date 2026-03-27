@@ -1433,11 +1433,8 @@ class Meting
 
     private function kugou_web_url($id)
     {
-        $debug_log = array('id' => $id, 'time' => date('Y-m-d H:i:s'));
-
         $is_hash = (bool) preg_match('/^[0-9a-fA-F]{32}$/', $id);
         $encode_id = $is_hash ? '' : $id;
-        $debug_log['is_hash'] = $is_hash;
 
         $original_header = $this->header;
         $this->header = array(
@@ -1463,15 +1460,12 @@ class Meting
             $params1['signature'] = $this->kugou_sign($params1);
             $api1 = array('method' => 'GET', 'url' => 'https://wwwapi.kugou.com/play/songinfo', 'body' => $params1);
             $step1 = json_decode($this->exec($api1), true);
-            $debug_log['step1_hash_lookup'] = isset($step1['data']['encode_album_audio_id']) ? $step1['data']['encode_album_audio_id'] : 'not_found';
             if (isset($step1['data']['encode_album_audio_id'])) {
                 $encode_id = $step1['data']['encode_album_audio_id'];
             }
         }
 
         if (!$encode_id) {
-            $debug_log['result'] = 'no_encode_id';
-            @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $this->header = $original_header;
             return json_encode(array('url' => '', 'size' => 0, 'br' => -1));
         }
@@ -1493,7 +1487,6 @@ class Meting
         $params2['signature'] = $this->kugou_sign($params2);
         $api2 = array('method' => 'GET', 'url' => 'https://wwwapi.kugou.com/play/songinfo', 'body' => $params2);
         $result = json_decode($this->exec($api2), true);
-        $debug_log['songinfo'] = $result;
 
         if (isset($result['data']['play_url']) && $result['data']['play_url']) {
             $url = $result['data']['play_url'];
@@ -1501,10 +1494,9 @@ class Meting
             $url = $result['data']['play_backup_url'];
         }
 
+        $this->header = $original_header;
+
         if (isset($url) && $url) {
-            $this->header = $original_header;
-            $debug_log['result'] = 'success';
-            @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             return json_encode(array(
                 'url'  => $url,
                 'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
@@ -1512,10 +1504,6 @@ class Meting
             ));
         }
 
-        $debug_log['result'] = 'songinfo_failed';
-        @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-        $this->header = $original_header;
         return json_encode(array('url' => '', 'size' => 0, 'br' => -1));
     }
 
@@ -1832,9 +1820,6 @@ class Meting
 
     protected function format_kugou($data)
     {
-        // 临时调试：记录搜索结果的字段名
-        @file_put_contents('cache/kugou_search_keys.json', json_encode(array_keys($data), JSON_PRETTY_PRINT));
-
         // 兼容网页版搜索（FileHash/FileName）和移动版搜索（hash/filename）
         $hash = isset($data['hash']) ? $data['hash'] : (isset($data['FileHash']) ? $data['FileHash'] : '');
         $name = isset($data['filename']) ? $data['filename'] : (isset($data['fileName']) ? $data['fileName'] : (isset($data['FileName']) ? $data['FileName'] : ''));
