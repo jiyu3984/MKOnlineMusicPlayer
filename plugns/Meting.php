@@ -242,24 +242,54 @@ class Meting
             );
             break;
             case 'kugou':
-            $api = array(
-                'method' => 'GET',
-                'url'    => 'http://mobilecdn.kugou.com/api/v3/search/song',
-                'body'   => array(
-                    'api_ver'   => 1,
-                    'area_code' => 1,
-                    'correct'   => 1,
-                    'pagesize'  => isset($option['limit']) ? $option['limit'] : 30,
-                    'plat'      => 2,
-                    'tag'       => 1,
-                    'sver'      => 5,
-                    'showtype'  => 10,
-                    'page'      => isset($option['page']) ? $option['page'] : 1,
-                    'keyword'   => $keyword,
-                    'version'   => 8990,
-                ),
-                'format' => 'data.info',
-            );
+            if ($this->kugou_token) {
+                // 网页版搜索 API（返回 EMixSongID）
+                $search_params = array(
+                    'bitrate'       => '0',
+                    'clienttime'    => strval(round(microtime(true) * 1000)),
+                    'clientver'     => '2000',
+                    'dfid'          => $this->kugou_dfid,
+                    'inputtype'     => '0',
+                    'iscorrection'  => '1',
+                    'isfuzzy'       => '0',
+                    'keyword'       => $keyword,
+                    'mid'           => $this->kugou_mid,
+                    'page'          => isset($option['page']) ? $option['page'] : 1,
+                    'pagesize'      => isset($option['limit']) ? $option['limit'] : 30,
+                    'platform'      => 'WebFilter',
+                    'privilege_filter' => '0',
+                    'srcappid'      => '2919',
+                    'token'         => $this->kugou_token,
+                    'userid'        => $this->kugou_userid,
+                    'uuid'          => $this->kugou_mid,
+                );
+                $search_params['signature'] = $this->kugou_sign($search_params);
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'https://complexsearch.kugou.com/v2/search/song',
+                    'body'   => $search_params,
+                    'format' => 'data.lists',
+                );
+            } else {
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'http://mobilecdn.kugou.com/api/v3/search/song',
+                    'body'   => array(
+                        'api_ver'   => 1,
+                        'area_code' => 1,
+                        'correct'   => 1,
+                        'pagesize'  => isset($option['limit']) ? $option['limit'] : 30,
+                        'plat'      => 2,
+                        'tag'       => 1,
+                        'sver'      => 5,
+                        'showtype'  => 10,
+                        'page'      => isset($option['page']) ? $option['page'] : 1,
+                        'keyword'   => $keyword,
+                        'version'   => 8990,
+                    ),
+                    'format' => 'data.info',
+                );
+            }
             break;
             case 'baidu':
             $api = array(
@@ -1796,19 +1826,24 @@ class Meting
 
     protected function format_kugou($data)
     {
+        // 兼容网页版搜索（FileHash/FileName）和移动版搜索（hash/filename）
+        $hash = isset($data['hash']) ? $data['hash'] : (isset($data['FileHash']) ? $data['FileHash'] : '');
+        $name = isset($data['filename']) ? $data['filename'] : (isset($data['fileName']) ? $data['fileName'] : (isset($data['FileName']) ? $data['FileName'] : ''));
+        $album = isset($data['album_name']) ? $data['album_name'] : (isset($data['AlbumName']) ? $data['AlbumName'] : '');
+
         // 优先使用 EMixSongID 作为 url_id（用于酷狗 VIP 播放）
-        $url_id = $data['hash'];
+        $url_id = $hash;
         if (isset($data['EMixSongID']) && $data['EMixSongID']) {
             $url_id = $data['EMixSongID'];
         }
         $result = array(
-            'id'       => $data['hash'],
-            'name'     => isset($data['filename']) ? $data['filename'] : $data['fileName'],
+            'id'       => $hash,
+            'name'     => $name,
             'artist'   => array(),
-            'album'    => isset($data['album_name']) ? $data['album_name'] : '',
+            'album'    => $album,
             'url_id'   => $url_id,
-            'pic_id'   => $data['hash'],
-            'lyric_id' => $data['hash'],
+            'pic_id'   => $hash,
+            'lyric_id' => $hash,
             'source'   => 'kugou',
         );
         list($result['artist'], $result['name']) = explode(' - ', $result['name'], 2);
