@@ -12,10 +12,10 @@ $netease_cookie = '';
 /************ ↑↑↑↑↑ 如果网易云音乐歌曲获取失效，请将你的 COOKIE 放到这儿 ↑↑↑↑↑ ***************/
 
 /************ ↓↓↓↓↓ 酷狗音乐VIP配置 ↓↓↓↓↓ ***************/
-$kugou_token = '';       // 酷狗登录token（Cookie中的 t 字段）
-$kugou_userid = '0';    // 酷狗用户ID（Cookie中的 KugooID 字段）
-$kugou_mid = '';         // 设备ID（Cookie中的 kg_mid 字段）
-$kugou_dfid = '';        // 设备指纹（Cookie中的 dfid 字段）
+$kugou_token = '52532e52444eb6c4082cf365dbd9897c1f2a9892d178f349f3392726cf9f2358';  // 酷狗登录token（Cookie中的 t 字段）
+$kugou_userid = '2018440906';    // 酷狗用户ID（Cookie中的 KugooID 字段）
+$kugou_mid = 'ae5ab587322911f3d6cfd08310e89df9';    // 设备ID（Cookie中的 kg_mid 字段）
+$kugou_dfid = '0jKyd0111ReE1w3tGp2dVcyX';           // 设备指纹（Cookie中的 dfid 字段）
 /************ ↑↑↑↑↑ 酷狗音乐VIP配置 ↑↑↑↑↑ ***************/
 /**
 * cookie 获取及使用方法见 
