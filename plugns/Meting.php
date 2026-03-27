@@ -47,11 +47,12 @@ class Meting
         return $this;
     }
 
-    public function kugouVip($userid, $token, $vip = 1)
+    public function kugouVip($userid, $token, $mid = '', $dfid = '')
     {
         $this->kugou_userid = $userid;
         $this->kugou_token = $token;
-        $this->kugou_vip = $vip;
+        $this->kugou_mid = $mid;
+        $this->kugou_dfid = $dfid;
 
         return $this;
     }
@@ -704,16 +705,20 @@ class Meting
             );
             break;
             case 'kugou':
+            if (isset($this->kugou_token) && $this->kugou_token) {
+                $this->temp['br'] = $br;
+                return $this->kugou_web_url($id);
+            }
             $api = array(
                 'method' => 'POST',
                 'url'    => 'http://media.store.kugou.com/v1/get_res_privilege',
                 'body'   => json_encode(
                     array(
                     'relate'    => 1,
-                    'userid'    => isset($this->kugou_userid) ? $this->kugou_userid : '0',
-                    'vip'       => isset($this->kugou_vip) ? $this->kugou_vip : 0,
+                    'userid'    => '0',
+                    'vip'       => 0,
                     'appid'     => 1000,
-                    'token'     => isset($this->kugou_token) ? $this->kugou_token : '',
+                    'token'     => '',
                     'behavior'  => 'download',
                     'area_code' => '1',
                     'clientver' => '8990',
@@ -1373,6 +1378,79 @@ class Meting
         }
 
         return json_encode($url);
+    }
+
+    private function kugou_sign($params)
+    {
+        $key = 'NVPh5oo715z5DIWAeQlhMDsWXXQV4hwt';
+        ksort($params);
+        $str = $key;
+        foreach ($params as $k => $v) {
+            $str .= $k . '=' . $v;
+        }
+        $str .= $key;
+        return md5($str);
+    }
+
+    private function kugou_web_url($hash)
+    {
+        $empty = json_encode(array('url' => '', 'size' => 0, 'br' => -1));
+
+        // 先通过 hash 获取 encode_album_audio_id
+        $song_api = array(
+            'method' => 'POST',
+            'url'    => 'http://m.kugou.com/app/i/getSongInfo.php',
+            'body'   => array(
+                'cmd'  => 'playInfo',
+                'hash' => $hash,
+                'from' => 'mkugou',
+            ),
+        );
+        $song_raw = $this->exec($song_api);
+        $song_data = json_decode($song_raw, true);
+        $encode_id = '';
+        if (isset($song_data['encode_album_audio_id'])) {
+            $encode_id = $song_data['encode_album_audio_id'];
+        } elseif (isset($song_data['EMixSongID'])) {
+            $encode_id = $song_data['EMixSongID'];
+        }
+
+        if (!$encode_id) {
+            return $empty;
+        }
+
+        // 调用酷狗网页版 songinfo API
+        $params = array(
+            'srcappid'              => '2919',
+            'clientver'             => '20000',
+            'clienttime'            => strval(round(microtime(true) * 1000)),
+            'mid'                   => $this->kugou_mid,
+            'uuid'                  => $this->kugou_mid,
+            'dfid'                  => $this->kugou_dfid,
+            'appid'                 => '1014',
+            'platid'                => '4',
+            'encode_album_audio_id' => $encode_id,
+            'token'                 => $this->kugou_token,
+            'userid'                => $this->kugou_userid,
+        );
+        $params['signature'] = $this->kugou_sign($params);
+
+        $api = array(
+            'method' => 'GET',
+            'url'    => 'https://wwwapi.kugou.com/play/songinfo',
+            'body'   => $params,
+        );
+        $result = json_decode($this->exec($api), true);
+
+        if (isset($result['data']['play_url']) && $result['data']['play_url']) {
+            return json_encode(array(
+                'url'  => $result['data']['play_url'],
+                'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
+                'br'   => isset($result['data']['bitrate']) ? $result['data']['bitrate'] : 128,
+            ));
+        }
+
+        return $empty;
     }
 
     private function baidu_url($result)

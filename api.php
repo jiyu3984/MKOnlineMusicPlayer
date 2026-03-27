@@ -11,12 +11,12 @@
 $netease_cookie = '';
 /************ ↑↑↑↑↑ 如果网易云音乐歌曲获取失效，请将你的 COOKIE 放到这儿 ↑↑↑↑↑ ***************/
 
-/************ ↓↓↓↓↓ 酷狗音乐VIP配置（需要填写cookie、userid和token） ↓↓↓↓↓ ***************/
-$kugou_cookie = '';      // 酷狗登录后的Cookie
-$kugou_userid = '0';    // 酷狗用户ID
-$kugou_token = '';       // 酷狗登录token
-$kugou_vip = 0;          // VIP类型（0=非VIP，1=VIP）
-/************ ↑↑↑↑↑ 酷狗音乐VIP配置（需要填写cookie、userid和token） ↑↑↑↑↑ ***************/
+/************ ↓↓↓↓↓ 酷狗音乐VIP配置 ↓↓↓↓↓ ***************/
+$kugou_token = '';       // 酷狗登录token（Cookie中的 t 字段）
+$kugou_userid = '0';    // 酷狗用户ID（Cookie中的 KugooID 字段）
+$kugou_mid = '';         // 设备ID（Cookie中的 kg_mid 字段）
+$kugou_dfid = '';        // 设备指纹（Cookie中的 dfid 字段）
+/************ ↑↑↑↑↑ 酷狗音乐VIP配置 ↑↑↑↑↑ ***************/
 /**
 * cookie 获取及使用方法见 
 * https://github.com/mengkunsoft/MKOnlineMusicPlayer/wiki/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E9%97%AE%E9%A2%98
@@ -63,9 +63,8 @@ if($source == 'kugou' || $source == 'baidu' || $source == 'tencent') {
 if(($source == 'netease') && $netease_cookie) {
     $API->cookie($netease_cookie);    // 解决网易云 Cookie 失效
 }
-if(($source == 'kugou') && $kugou_cookie) {
-    $API->cookie($kugou_cookie);
-    $API->kugouVip($kugou_userid, $kugou_token, $kugou_vip);
+if(($source == 'kugou') && $kugou_token) {
+    $API->kugouVip($kugou_userid, $kugou_token, $kugou_mid, $kugou_dfid);
 }
 
 // 没有缓存文件夹则创建
