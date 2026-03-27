@@ -1826,6 +1826,9 @@ class Meting
 
     protected function format_kugou($data)
     {
+        // 临时调试：记录搜索结果的字段名
+        @file_put_contents('cache/kugou_search_keys.json', json_encode(array_keys($data), JSON_PRETTY_PRINT));
+
         // 兼容网页版搜索（FileHash/FileName）和移动版搜索（hash/filename）
         $hash = isset($data['hash']) ? $data['hash'] : (isset($data['FileHash']) ? $data['FileHash'] : '');
         $name = isset($data['filename']) ? $data['filename'] : (isset($data['fileName']) ? $data['fileName'] : (isset($data['FileName']) ? $data['FileName'] : ''));
