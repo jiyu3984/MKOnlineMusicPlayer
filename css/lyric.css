@@ -25,6 +25,17 @@
     border: none !important;
 }
 
+/* 高亮所在整行不模糊 */
+.lrc-item .shell.lplaying,
+.lrc-item .trans-lyric.lplaying {
+    filter: none !important;
+}
+
+.lrc-item-playing {
+    filter: none !important;
+    z-index: 10;
+}
+
 /* 歌词包装器 */
 .lyric-wrapper {
     display: flex;
