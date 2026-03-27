@@ -1435,31 +1435,9 @@ class Meting
     {
         $debug_log = array('id' => $id, 'time' => date('Y-m-d H:i:s'));
 
-        // 判断 id 是 hash（32位十六进制）还是 encode_album_audio_id
         $is_hash = (bool) preg_match('/^[0-9a-fA-F]{32}$/', $id);
         $debug_log['is_hash'] = $is_hash;
 
-        if ($is_hash) {
-            // 没有 encode_album_audio_id，直接回退
-            $debug_log['result'] = 'no_encode_id_fallback';
-            @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-            $this->temp['br'] = isset($this->temp['br']) ? $this->temp['br'] : 320;
-            $fallback_api = array(
-                'method' => 'POST',
-                'url'    => 'http://media.store.kugou.com/v1/get_res_privilege',
-                'body'   => json_encode(array(
-                    'relate' => 1, 'userid' => '0', 'vip' => 0, 'appid' => 1000,
-                    'token' => '', 'behavior' => 'download', 'area_code' => '1',
-                    'clientver' => '8990',
-                    'resource' => array(array('id' => 0, 'type' => 'audio', 'hash' => $id)),
-                )),
-                'decode' => 'kugou_url',
-            );
-            return $this->exec($fallback_api);
-        }
-
-        // 有 encode_album_audio_id，使用 songinfo API
         $original_header = $this->header;
         $this->header = array(
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
@@ -1467,18 +1445,23 @@ class Meting
         );
 
         $params = array(
-            'srcappid'              => '2919',
-            'clientver'             => '20000',
-            'clienttime'            => strval(round(microtime(true) * 1000)),
-            'mid'                   => $this->kugou_mid,
-            'uuid'                  => $this->kugou_mid,
-            'dfid'                  => $this->kugou_dfid,
-            'appid'                 => '1014',
-            'platid'                => '4',
-            'encode_album_audio_id' => $id,
-            'token'                 => $this->kugou_token,
-            'userid'                => $this->kugou_userid,
+            'srcappid'   => '2919',
+            'clientver'  => '20000',
+            'clienttime' => strval(round(microtime(true) * 1000)),
+            'mid'        => $this->kugou_mid,
+            'uuid'       => $this->kugou_mid,
+            'dfid'       => $this->kugou_dfid,
+            'appid'      => '1014',
+            'platid'     => '4',
+            'token'      => $this->kugou_token,
+            'userid'     => $this->kugou_userid,
         );
+
+        if ($is_hash) {
+            $params['hash'] = $id;
+        } else {
+            $params['encode_album_audio_id'] = $id;
+        }
         $params['signature'] = $this->kugou_sign($params);
 
         $api = array(
