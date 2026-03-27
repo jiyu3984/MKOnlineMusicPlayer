@@ -1425,6 +1425,8 @@ class Meting
             'mid'        => $this->kugou_mid,
             'platid'     => '4',
             'album_id'   => 'empty',
+            'token'      => $this->kugou_token,
+            'userid'     => $this->kugou_userid,
             '_'          => strval(round(microtime(true) * 1000)),
         );
 
