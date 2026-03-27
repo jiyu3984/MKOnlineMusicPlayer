@@ -1394,11 +1394,18 @@ class Meting
 
     private function kugou_web_url($hash)
     {
+        $debug = defined('DEBUG') && DEBUG === true;
+        $debug_log = array('hash' => $hash);
+
         // 保存原始 header，web API 需要浏览器 UA
         $original_header = $this->header;
+        $cookie = 'kg_mid=' . $this->kugou_mid . '; kg_dfid=' . $this->kugou_dfid
+            . '; KugooID=' . $this->kugou_userid . '; t=' . $this->kugou_token
+            . '; mid=' . $this->kugou_mid . '; dfid=' . $this->kugou_dfid;
         $this->header = array(
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
             'Referer'    => 'https://www.kugou.com/',
+            'Cookie'     => $cookie,
         );
 
         // 先通过 hash 获取 encode_album_audio_id
@@ -1414,6 +1421,10 @@ class Meting
         $song_raw = $this->exec($song_api);
         $song_data = json_decode($song_raw, true);
 
+        if ($debug) {
+            $debug_log['step1_getSongInfo'] = $song_data;
+        }
+
         // getSongInfo 响应可能嵌套在 data 下
         $info = $song_data;
         if (isset($song_data['data']) && is_array($song_data['data'])) {
@@ -1425,6 +1436,9 @@ class Meting
             $encode_id = $info['encode_album_audio_id'];
         } elseif (isset($info['EMixSongID'])) {
             $encode_id = $info['EMixSongID'];
+        }
+        if ($debug) {
+            $debug_log['encode_id'] = $encode_id;
         }
 
         if ($encode_id) {
@@ -1449,7 +1463,12 @@ class Meting
                 'url'    => 'https://wwwapi.kugou.com/play/songinfo',
                 'body'   => $params,
             );
-            $result = json_decode($this->exec($api), true);
+            $songinfo_raw = $this->exec($api);
+            $result = json_decode($songinfo_raw, true);
+
+            if ($debug) {
+                $debug_log['step2_songinfo'] = $result;
+            }
 
             if (isset($result['data']['play_url']) && $result['data']['play_url']) {
                 $url = $result['data']['play_url'];
@@ -1459,12 +1478,21 @@ class Meting
 
             if (isset($url)) {
                 $this->header = $original_header;
+                if ($debug) {
+                    $debug_log['result'] = 'success';
+                    file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                }
                 return json_encode(array(
                     'url'  => $url,
                     'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
                     'br'   => isset($result['data']['bitrate']) ? $result['data']['bitrate'] : 128,
                 ));
             }
+        }
+
+        if ($debug) {
+            $debug_log['result'] = 'fallback';
+            file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
 
         // web API 失败，回退到原有 get_res_privilege 接口
