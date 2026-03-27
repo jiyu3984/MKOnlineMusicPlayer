@@ -1436,6 +1436,7 @@ class Meting
         $debug_log = array('id' => $id, 'time' => date('Y-m-d H:i:s'));
 
         $is_hash = (bool) preg_match('/^[0-9a-fA-F]{32}$/', $id);
+        $encode_id = $is_hash ? '' : $id;
         $debug_log['is_hash'] = $is_hash;
 
         $original_header = $this->header;
@@ -1444,32 +1445,54 @@ class Meting
             'Referer'    => 'https://www.kugou.com/',
         );
 
-        $params = array(
-            'srcappid'   => '2919',
-            'clientver'  => '20000',
-            'clienttime' => strval(round(microtime(true) * 1000)),
-            'mid'        => $this->kugou_mid,
-            'uuid'       => $this->kugou_mid,
-            'dfid'       => $this->kugou_dfid,
-            'appid'      => '1014',
-            'platid'     => '4',
-            'token'      => $this->kugou_token,
-            'userid'     => $this->kugou_userid,
-        );
-
+        // 第一步：如果是 hash，先获取 encode_album_audio_id
         if ($is_hash) {
-            $params['hash'] = $id;
-        } else {
-            $params['encode_album_audio_id'] = $id;
+            $params1 = array(
+                'srcappid'   => '2919',
+                'clientver'  => '20000',
+                'clienttime' => strval(round(microtime(true) * 1000)),
+                'mid'        => $this->kugou_mid,
+                'uuid'       => $this->kugou_mid,
+                'dfid'       => $this->kugou_dfid,
+                'appid'      => '1014',
+                'platid'     => '4',
+                'hash'       => $id,
+                'token'      => $this->kugou_token,
+                'userid'     => $this->kugou_userid,
+            );
+            $params1['signature'] = $this->kugou_sign($params1);
+            $api1 = array('method' => 'GET', 'url' => 'https://wwwapi.kugou.com/play/songinfo', 'body' => $params1);
+            $step1 = json_decode($this->exec($api1), true);
+            $debug_log['step1_hash_lookup'] = isset($step1['data']['encode_album_audio_id']) ? $step1['data']['encode_album_audio_id'] : 'not_found';
+            if (isset($step1['data']['encode_album_audio_id'])) {
+                $encode_id = $step1['data']['encode_album_audio_id'];
+            }
         }
-        $params['signature'] = $this->kugou_sign($params);
 
-        $api = array(
-            'method' => 'GET',
-            'url'    => 'https://wwwapi.kugou.com/play/songinfo',
-            'body'   => $params,
+        if (!$encode_id) {
+            $debug_log['result'] = 'no_encode_id';
+            @file_put_contents('cache/kugou_debug.json', json_encode($debug_log, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            $this->header = $original_header;
+            return json_encode(array('url' => '', 'size' => 0, 'br' => -1));
+        }
+
+        // 第二步：用 encode_album_audio_id 获取 play_url
+        $params2 = array(
+            'srcappid'              => '2919',
+            'clientver'             => '20000',
+            'clienttime'            => strval(round(microtime(true) * 1000)),
+            'mid'                   => $this->kugou_mid,
+            'uuid'                  => $this->kugou_mid,
+            'dfid'                  => $this->kugou_dfid,
+            'appid'                 => '1014',
+            'platid'                => '4',
+            'encode_album_audio_id' => $encode_id,
+            'token'                 => $this->kugou_token,
+            'userid'                => $this->kugou_userid,
         );
-        $result = json_decode($this->exec($api), true);
+        $params2['signature'] = $this->kugou_sign($params2);
+        $api2 = array('method' => 'GET', 'url' => 'https://wwwapi.kugou.com/play/songinfo', 'body' => $params2);
+        $result = json_decode($this->exec($api2), true);
         $debug_log['songinfo'] = $result;
 
         if (isset($result['data']['play_url']) && $result['data']['play_url']) {
