@@ -11,6 +11,9 @@
 
 namespace Metowolf;
 
+// 抑制 PHP 8.2 弃用警告，避免污染 JSON 输出
+error_reporting(error_reporting() & ~E_DEPRECATED);
+
 class Meting
 {
     const VERSION = '1.5.11';
@@ -26,6 +29,11 @@ class Meting
     public $proxy = null;
     public $format = false;
     public $header;
+
+    public $kugou_userid = '0';
+    public $kugou_token = '';
+    public $kugou_mid = '';
+    public $kugou_dfid = '';
 
     public function __construct($value = 'netease')
     {
