@@ -1770,10 +1770,17 @@ class Meting
         for ($i = 0; $i < strlen($data); $i++) {
             $decrypted .= chr(ord($data[$i]) ^ $key[$i % $key_len]);
         }
+        // 调试：记录 XOR 后的头部字节
+        @file_put_contents('cache/kugou_krc_xor.txt', 'xor_head_hex: ' . bin2hex(substr($decrypted, 0, 16)) . "\n" .
+            'try_gzuncompress: ' . (@gzuncompress($decrypted) !== false ? 'ok' : 'fail') . "\n" .
+            'try_gzinflate: ' . (@gzinflate($decrypted) !== false ? 'ok' : 'fail') . "\n" .
+            'try_gzdecode: ' . (@gzdecode($decrypted) !== false ? 'ok' : 'fail') . "\n" .
+            'try_gzinflate_skip2: ' . (@gzinflate(substr($decrypted, 2)) !== false ? 'ok' : 'fail') . "\n"
+        );
         $result = @gzuncompress($decrypted);
-        if ($result === false) {
-            $result = @gzinflate($decrypted);
-        }
+        if ($result === false) $result = @gzinflate($decrypted);
+        if ($result === false) $result = @gzdecode($decrypted);
+        if ($result === false) $result = @gzinflate(substr($decrypted, 2));
         return $result ? $result : '';
     }
 
