@@ -1699,7 +1699,7 @@ class Meting
             return json_encode(array('lyric' => '', 'tlyric' => ''), JSON_UNESCAPED_UNICODE);
         }
 
-        // 优先选有 language 标记的候选（包含翻译信息）
+        // 优先选有 language 标记的候选
         $best = $result['candidates'][0];
         foreach ($result['candidates'] as $candidate) {
             if (isset($candidate['language']) && $candidate['language']) {
@@ -1721,6 +1721,16 @@ class Meting
             ),
         );
         $data = json_decode($this->exec($api), true);
+
+        // 临时调试：记录候选和下载响应的完整信息
+        @file_put_contents('cache/kugou_lyric_debug.json', json_encode(array(
+            'candidates' => $result['candidates'],
+            'best' => $best,
+            'download_keys' => array_keys($data),
+            'has_info' => isset($data['info']) && $data['info'] ? 'yes' : 'no',
+            'info_raw' => isset($data['info']) ? $data['info'] : null,
+        ), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
         $lyric = isset($data['content']) ? base64_decode($data['content']) : '';
 
         // 从 info 字段提取翻译
