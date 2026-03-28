@@ -1006,8 +1006,14 @@ class Meting
             $data = $this->format(false)->song($id);
             $this->format = $format;
             $data = json_decode($data, true);
-            $url = $data['imgUrl'];
-            $url = str_replace('{size}', '400', $url);
+            // 优先使用专辑封面，避免歌手写真
+            if (isset($data['album_img']) && $data['album_img']) {
+                $url = str_replace('{size}', '400', $data['album_img']);
+            } elseif (isset($data['imgUrl']) && $data['imgUrl']) {
+                $url = str_replace('{size}', '400', $data['imgUrl']);
+            } else {
+                $url = '';
+            }
             break;
             case 'baidu':
             $format = $this->format;
