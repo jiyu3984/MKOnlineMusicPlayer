@@ -1725,37 +1725,56 @@ class Meting
         $lyric = isset($data['content']) ? base64_decode($data['content']) : '';
 
         // 从 KRC 格式提取翻译
+        // 遍历候选，用 client=pc 下载，检查 info 字段中的翻译
         $tlyric = '';
-        if ($best_krc) {
-            $krc_api = array(
+        preg_match_all('/\[(\d{2}:\d{2}\.\d{2,3})\]/', $lyric, $tm);
+        $timestamps = $tm[0];
+
+        foreach ($result['candidates'] as $candidate) {
+            if ($tlyric) break;
+            $tapi = array(
                 'method' => 'GET',
                 'url'    => 'http://lyrics.kugou.com/download',
                 'body'   => array(
                     'charset'   => 'utf8',
-                    'accesskey' => $best_krc['accesskey'],
-                    'id'        => $best_krc['id'],
-                    'client'    => 'mobi',
-                    'fmt'       => 'krc',
+                    'accesskey' => $candidate['accesskey'],
+                    'id'        => $candidate['id'],
+                    'client'    => 'pc',
+                    'fmt'       => 'lrc',
                     'ver'       => 1,
                 ),
             );
-            $krc_data = json_decode($this->exec($krc_api), true);
-            $debug = array('has_content' => isset($krc_data['content']), 'krc_id' => $best_krc['id']);
-            if (isset($krc_data['content'])) {
-                $raw = base64_decode($krc_data['content']);
-                $debug['raw_len'] = strlen($raw);
-                $debug['raw_head'] = bin2hex(substr($raw, 0, 8));
-                $krc_decoded = $this->krc_decrypt($raw);
-                $debug['decoded_len'] = strlen($krc_decoded);
-                $debug['decoded_head'] = substr($krc_decoded, 0, 200);
-                $debug['has_language_tag'] = strpos($krc_decoded, '[language:') !== false;
-                if ($krc_decoded) {
-                    $tlyric = $this->krc_extract_translation($krc_decoded, $lyric);
-                    $debug['tlyric_len'] = strlen($tlyric);
+            $tdata = json_decode($this->exec($tapi), true);
+
+            if (isset($tdata['info']) && $tdata['info']) {
+                $info_data = json_decode(base64_decode($tdata['info']), true);
+                if (is_array($info_data)) {
+                    foreach ($info_data as $item) {
+                        $contents = isset($item['content']) ? $item['content'] : array();
+                        foreach ($contents as $ci) {
+                            if (isset($ci['type']) && $ci['type'] == 1 && isset($ci['lyricContent'])) {
+                                $lines = array();
+                                foreach ($ci['lyricContent'] as $i => $la) {
+                                    $text = is_array($la) ? implode('', array_map(function($p) { return is_array($p) ? $p[0] : $p; }, $la)) : $la;
+                                    $ts = isset($timestamps[$i]) ? $timestamps[$i] : '';
+                                    if ($ts && trim($text)) $lines[] = $ts . $text;
+                                }
+                                if ($lines) { $tlyric = implode("\n", $lines); break 3; }
+                            }
+                        }
+                    }
                 }
             }
-            @file_put_contents('cache/kugou_krc_debug.json', json_encode($debug, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            // 只检查前3个候选，避免太多请求
+            static $checked = 0;
+            if (++$checked >= 3) break;
         }
+
+        // 调试
+        @file_put_contents('cache/kugou_trans_debug.json', json_encode(array(
+            'tlyric_len' => strlen($tlyric),
+            'candidates_checked' => $checked,
+        ), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
         return json_encode(array('lyric' => $lyric, 'tlyric' => $tlyric), JSON_UNESCAPED_UNICODE);
     }
