@@ -1770,10 +1770,31 @@ class Meting
         for ($i = 0; $i < strlen($data); $i++) {
             $decrypted .= chr(ord($data[$i]) ^ $key[$i % $key_len]);
         }
-        $result = @zlib_decode($decrypted);
-        if ($result === false) $result = @gzuncompress($decrypted, 1000000);
+
+        // 尝试多种解压方式
+        $result = @zlib_decode($decrypted, 10000000);
+        if ($result === false) $result = @gzuncompress($decrypted, 10000000);
+        if ($result === false) $result = @gzinflate(substr($decrypted, 2, -4));  // 跳过zlib头+尾
         if ($result === false) $result = @gzinflate(substr($decrypted, 2));
-        return $result ? $result : '';
+        if ($result === false) {
+            // 使用 inflate 流式解压
+            $ctx = @inflate_init(ZLIB_ENCODING_RAW);
+            if ($ctx) $result = @inflate_add($ctx, substr($decrypted, 2));
+        }
+        if ($result === false) {
+            $ctx = @inflate_init(ZLIB_ENCODING_DEFLATE);
+            if ($ctx) $result = @inflate_add($ctx, $decrypted);
+        }
+
+        // 调试
+        @file_put_contents('cache/kugou_krc_decompress.txt',
+            'data_len=' . strlen($decrypted) . "\n" .
+            'zlib_decode=' . (@zlib_decode($decrypted) !== false ? 'ok' : var_export(error_get_last(), true)) . "\n" .
+            'result_len=' . ($result ? strlen($result) : 0) . "\n" .
+            'result_head=' . ($result ? substr($result, 0, 300) : 'empty') . "\n"
+        );
+
+        return ($result !== false && $result !== null) ? $result : '';
     }
 
     private function krc_extract_translation($krc_content, $lyric)
