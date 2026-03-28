@@ -1740,12 +1740,21 @@ class Meting
                 ),
             );
             $krc_data = json_decode($this->exec($krc_api), true);
+            $debug = array('has_content' => isset($krc_data['content']), 'krc_id' => $best_krc['id']);
             if (isset($krc_data['content'])) {
-                $krc_decoded = $this->krc_decrypt(base64_decode($krc_data['content']));
+                $raw = base64_decode($krc_data['content']);
+                $debug['raw_len'] = strlen($raw);
+                $debug['raw_head'] = bin2hex(substr($raw, 0, 8));
+                $krc_decoded = $this->krc_decrypt($raw);
+                $debug['decoded_len'] = strlen($krc_decoded);
+                $debug['decoded_head'] = substr($krc_decoded, 0, 200);
+                $debug['has_language_tag'] = strpos($krc_decoded, '[language:') !== false;
                 if ($krc_decoded) {
                     $tlyric = $this->krc_extract_translation($krc_decoded, $lyric);
+                    $debug['tlyric_len'] = strlen($tlyric);
                 }
             }
+            @file_put_contents('cache/kugou_krc_debug.json', json_encode($debug, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
 
         return json_encode(array('lyric' => $lyric, 'tlyric' => $tlyric), JSON_UNESCAPED_UNICODE);
