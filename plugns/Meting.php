@@ -1699,7 +1699,7 @@ class Meting
             return json_encode(array('lyric' => '', 'tlyric' => ''), JSON_UNESCAPED_UNICODE);
         }
 
-        // 下载歌词（优先选有 language 标记的候选，包含翻译信息）
+        // 优先选有 language 标记的候选（包含翻译信息）
         $best = $result['candidates'][0];
         foreach ($result['candidates'] as $candidate) {
             if (isset($candidate['language']) && $candidate['language']) {
@@ -1724,17 +1724,33 @@ class Meting
         $lyric = isset($data['content']) ? base64_decode($data['content']) : '';
 
         // 从 info 字段提取翻译
+        // 结构: [{"type":0,"content":[{"language":0,"lyricContent":[...]},{"language":1,"lyricContent":[...翻译]}]}]
         $tlyric = '';
         if (isset($data['info']) && $data['info']) {
-            $info_raw = base64_decode($data['info']);
-            // 临时调试
-            @file_put_contents('cache/kugou_lyric_info.json', $info_raw);
-            $info_data = json_decode($info_raw, true);
+            $info_data = json_decode(base64_decode($data['info']), true);
             if (is_array($info_data)) {
-                foreach ($info_data as $lang_item) {
-                    if (isset($lang_item['content']) && isset($lang_item['type']) && $lang_item['type'] == 1) {
-                        $tlyric = base64_decode($lang_item['content']);
-                        break;
+                // 提取原歌词的时间戳
+                preg_match_all('/\[(\d{2}:\d{2}\.\d{2,3})\]/', $lyric, $time_matches);
+                $timestamps = $time_matches[0];
+
+                foreach ($info_data as $item) {
+                    $contents = isset($item['content']) ? $item['content'] : array();
+                    foreach ($contents as $content_item) {
+                        // language > 0 表示翻译（1=中文翻译等）
+                        if (isset($content_item['language']) && $content_item['language'] > 0 && isset($content_item['lyricContent'])) {
+                            $trans_lines = array();
+                            foreach ($content_item['lyricContent'] as $i => $line_arr) {
+                                $text = is_array($line_arr) ? implode('', $line_arr) : $line_arr;
+                                $ts = isset($timestamps[$i]) ? $timestamps[$i] : '';
+                                if ($ts && trim($text)) {
+                                    $trans_lines[] = $ts . $text;
+                                }
+                            }
+                            if (!empty($trans_lines)) {
+                                $tlyric = implode("\n", $trans_lines);
+                                break 2;
+                            }
+                        }
                     }
                 }
             }
