@@ -112,7 +112,7 @@ function ajaxUrl(music, callback)
     $.ajax({ 
         type: mkPlayer.method, 
         url: mkPlayer.api,
-        data: "types=url&id=" + music.id + "&source=" + music.source,
+        data: "types=url&id=" + music.id + "&source=" + music.source + (music.url_id ? "&url_id=" + music.url_id : ""),
         dataType: mkPlayer.dataType,
         success: function(jsonData){
             // 调试信息输出

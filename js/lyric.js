@@ -29,7 +29,7 @@ function lyricCallback(str, id, tstr) {
     }
 
     rem.lyric = parseLyric(str);  // 原歌词
-    rem.tlyric = parseLyric(tstr); // 翻译歌词
+    rem.tlyric = parseLyric(tstr || ''); // 翻译歌词
 
     lyricArea.html('');
     lyricArea.scrollTop(0);
@@ -116,22 +116,28 @@ function applyBlur(currentIndex) {
 
         if (distance === 0) {
             $(this).css({
-                filter: "none",
-                transform: "none"
+                '-webkit-filter': 'none',
+                'filter': 'none',
+                '-webkit-transform': 'none',
+                'transform': 'none'
             });
         } else if (distance <= maxDistance) {
             const blur = Math.min(maxBlur, (distance / maxDistance) * maxBlur);
             const tilt = (distance / maxDistance) * maxTilt;
             const direction = index < centerIndex ? -1 : 1;  // 上面向左倾，下面向右倾
             $(this).css({
-                filter: `blur(${blur}px)`,
-                transform: `rotateY(${direction * tilt}deg)`
+                '-webkit-filter': `blur(${blur}px)`,
+                'filter': `blur(${blur}px)`,
+                '-webkit-transform': `rotateY(${direction * tilt}deg)`,
+                'transform': `rotateY(${direction * tilt}deg)`
             });
         } else {
             const direction = index < centerIndex ? -1 : 1;
             $(this).css({
-                filter: `blur(${maxBlur}px)`,
-                transform: `rotateY(${direction * maxTilt}deg)`
+                '-webkit-filter': `blur(${maxBlur}px)`,
+                'filter': `blur(${maxBlur}px)`,
+                '-webkit-transform': `rotateY(${direction * maxTilt}deg)`,
+                'transform': `rotateY(${direction * maxTilt}deg)`
             });
         }
     });

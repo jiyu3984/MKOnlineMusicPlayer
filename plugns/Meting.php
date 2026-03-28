@@ -11,6 +11,9 @@
 
 namespace Metowolf;
 
+// 抑制 PHP 8.2 弃用警告，避免污染 JSON 输出
+error_reporting(error_reporting() & ~E_DEPRECATED);
+
 class Meting
 {
     const VERSION = '1.5.11';
@@ -20,11 +23,17 @@ class Meting
     public $info;
     public $error;
     public $status;
+    public $temp = array();
 
     public $server;
     public $proxy = null;
     public $format = false;
     public $header;
+
+    public $kugou_userid = '0';
+    public $kugou_token = '';
+    public $kugou_mid = '';
+    public $kugou_dfid = '';
 
     public function __construct($value = 'netease')
     {
@@ -43,6 +52,16 @@ class Meting
     public function cookie($value)
     {
         $this->header['Cookie'] = $value;
+
+        return $this;
+    }
+
+    public function kugouVip($userid, $token, $mid = '', $dfid = '')
+    {
+        $this->kugou_userid = $userid;
+        $this->kugou_token = $token;
+        $this->kugou_mid = $mid;
+        $this->kugou_dfid = $dfid;
 
         return $this;
     }
@@ -223,24 +242,54 @@ class Meting
             );
             break;
             case 'kugou':
-            $api = array(
-                'method' => 'GET',
-                'url'    => 'http://mobilecdn.kugou.com/api/v3/search/song',
-                'body'   => array(
-                    'api_ver'   => 1,
-                    'area_code' => 1,
-                    'correct'   => 1,
-                    'pagesize'  => isset($option['limit']) ? $option['limit'] : 30,
-                    'plat'      => 2,
-                    'tag'       => 1,
-                    'sver'      => 5,
-                    'showtype'  => 10,
-                    'page'      => isset($option['page']) ? $option['page'] : 1,
-                    'keyword'   => $keyword,
-                    'version'   => 8990,
-                ),
-                'format' => 'data.info',
-            );
+            if ($this->kugou_token) {
+                // 网页版搜索 API（返回 EMixSongID）
+                $search_params = array(
+                    'bitrate'       => '0',
+                    'clienttime'    => strval(round(microtime(true) * 1000)),
+                    'clientver'     => '2000',
+                    'dfid'          => $this->kugou_dfid,
+                    'inputtype'     => '0',
+                    'iscorrection'  => '1',
+                    'isfuzzy'       => '0',
+                    'keyword'       => $keyword,
+                    'mid'           => $this->kugou_mid,
+                    'page'          => isset($option['page']) ? $option['page'] : 1,
+                    'pagesize'      => isset($option['limit']) ? $option['limit'] : 30,
+                    'platform'      => 'WebFilter',
+                    'privilege_filter' => '0',
+                    'srcappid'      => '2919',
+                    'token'         => $this->kugou_token,
+                    'userid'        => $this->kugou_userid,
+                    'uuid'          => $this->kugou_mid,
+                );
+                $search_params['signature'] = $this->kugou_sign($search_params);
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'https://complexsearch.kugou.com/v2/search/song',
+                    'body'   => $search_params,
+                    'format' => 'data.lists',
+                );
+            } else {
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'http://mobilecdn.kugou.com/api/v3/search/song',
+                    'body'   => array(
+                        'api_ver'   => 1,
+                        'area_code' => 1,
+                        'correct'   => 1,
+                        'pagesize'  => isset($option['limit']) ? $option['limit'] : 30,
+                        'plat'      => 2,
+                        'tag'       => 1,
+                        'sver'      => 5,
+                        'showtype'  => 10,
+                        'page'      => isset($option['page']) ? $option['page'] : 1,
+                        'keyword'   => $keyword,
+                        'version'   => 8990,
+                    ),
+                    'format' => 'data.info',
+                );
+            }
             break;
             case 'baidu':
             $api = array(
@@ -695,6 +744,10 @@ class Meting
             );
             break;
             case 'kugou':
+            if (isset($this->kugou_token) && $this->kugou_token) {
+                $this->temp['br'] = $br;
+                return $this->kugou_web_url($id);
+            }
             $api = array(
                 'method' => 'POST',
                 'url'    => 'http://media.store.kugou.com/v1/get_res_privilege',
@@ -953,8 +1006,14 @@ class Meting
             $data = $this->format(false)->song($id);
             $this->format = $format;
             $data = json_decode($data, true);
-            $url = $data['imgUrl'];
-            $url = str_replace('{size}', '400', $url);
+            // 优先使用专辑封面，避免歌手写真
+            if (isset($data['album_img']) && $data['album_img']) {
+                $url = str_replace('{size}', '400', $data['album_img']);
+            } elseif (isset($data['imgUrl']) && $data['imgUrl']) {
+                $url = str_replace('{size}', '400', $data['imgUrl']);
+            } else {
+                $url = '';
+            }
             break;
             case 'baidu':
             $format = $this->format;
@@ -1105,7 +1164,7 @@ class Meting
         }
 
         if (extension_loaded('bcmath')) {
-            $skey = strrev(utf8_encode($skey));
+            $skey = strrev(mb_convert_encoding($skey, 'UTF-8', 'ISO-8859-1'));
             $skey = $this->bchexdec($this->str2hex($skey));
             $skey = bcpowmod($skey, $pubkey, $modulus);
             $skey = $this->bcdechex($skey);
@@ -1366,6 +1425,94 @@ class Meting
         return json_encode($url);
     }
 
+    private function kugou_sign($params)
+    {
+        $key = 'NVPh5oo715z5DIWAeQlhMDsWXXQV4hwt';
+        ksort($params);
+        $str = $key;
+        foreach ($params as $k => $v) {
+            $str .= $k . '=' . $v;
+        }
+        $str .= $key;
+        return md5($str);
+    }
+
+    private function kugou_web_url($id)
+    {
+        $is_hash = (bool) preg_match('/^[0-9a-fA-F]{32}$/', $id);
+        $encode_id = $is_hash ? '' : $id;
+
+        $original_header = $this->header;
+        $this->header = array(
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+            'Referer'    => 'https://www.kugou.com/',
+        );
+
+        // 第一步：如果是 hash，先获取 encode_album_audio_id
+        if ($is_hash) {
+            $params1 = array(
+                'srcappid'   => '2919',
+                'clientver'  => '20000',
+                'clienttime' => strval(round(microtime(true) * 1000)),
+                'mid'        => $this->kugou_mid,
+                'uuid'       => $this->kugou_mid,
+                'dfid'       => $this->kugou_dfid,
+                'appid'      => '1014',
+                'platid'     => '4',
+                'hash'       => $id,
+                'token'      => $this->kugou_token,
+                'userid'     => $this->kugou_userid,
+            );
+            $params1['signature'] = $this->kugou_sign($params1);
+            $api1 = array('method' => 'GET', 'url' => 'https://wwwapi.kugou.com/play/songinfo', 'body' => $params1);
+            $step1 = json_decode($this->exec($api1), true);
+            if (isset($step1['data']['encode_album_audio_id'])) {
+                $encode_id = $step1['data']['encode_album_audio_id'];
+            }
+        }
+
+        if (!$encode_id) {
+            $this->header = $original_header;
+            return json_encode(array('url' => '', 'size' => 0, 'br' => -1));
+        }
+
+        // 第二步：用 encode_album_audio_id 获取 play_url
+        $params2 = array(
+            'srcappid'              => '2919',
+            'clientver'             => '20000',
+            'clienttime'            => strval(round(microtime(true) * 1000)),
+            'mid'                   => $this->kugou_mid,
+            'uuid'                  => $this->kugou_mid,
+            'dfid'                  => $this->kugou_dfid,
+            'appid'                 => '1014',
+            'platid'                => '4',
+            'encode_album_audio_id' => $encode_id,
+            'token'                 => $this->kugou_token,
+            'userid'                => $this->kugou_userid,
+        );
+        $params2['signature'] = $this->kugou_sign($params2);
+        $api2 = array('method' => 'GET', 'url' => 'https://wwwapi.kugou.com/play/songinfo', 'body' => $params2);
+        $result = json_decode($this->exec($api2), true);
+
+        if (isset($result['data']['play_url']) && $result['data']['play_url']) {
+            $url = $result['data']['play_url'];
+        } elseif (isset($result['data']['play_backup_url']) && $result['data']['play_backup_url']) {
+            $url = $result['data']['play_backup_url'];
+        }
+
+        $this->header = $original_header;
+
+        if (isset($url) && $url) {
+            return json_encode(array(
+                'url'  => $url,
+                'size' => isset($result['data']['filesize']) ? $result['data']['filesize'] : 0,
+                'br'   => isset($result['data']['bitrate']) ? $result['data']['bitrate'] : 128,
+            ));
+        }
+
+        return json_encode(array('url' => '', 'size' => 0, 'br' => -1));
+    }
+
     private function baidu_url($result)
     {
         $data = json_decode($result, true);
@@ -1554,6 +1701,10 @@ class Meting
     private function kugou_lyric($result)
     {
         $result = json_decode($result, true);
+        if (!isset($result['candidates'][0])) {
+            return json_encode(array('lyric' => '', 'tlyric' => ''), JSON_UNESCAPED_UNICODE);
+        }
+
         $api = array(
             'method' => 'GET',
             'url'    => 'http://lyrics.kugou.com/download',
@@ -1567,12 +1718,9 @@ class Meting
             ),
         );
         $data = json_decode($this->exec($api), true);
-        $arr = array(
-            'lyric'  => base64_decode($data['content']),
-            'tlyric' => '',
-        );
+        $lyric = isset($data['content']) ? base64_decode($data['content']) : '';
 
-        return json_encode($arr, JSON_UNESCAPED_UNICODE);
+        return json_encode(array('lyric' => $lyric, 'tlyric' => ''), JSON_UNESCAPED_UNICODE);
     }
 
     private function baidu_lyric($result)
@@ -1679,14 +1827,24 @@ class Meting
 
     protected function format_kugou($data)
     {
+        // 兼容网页版搜索（FileHash/FileName）和移动版搜索（hash/filename）
+        $hash = isset($data['hash']) ? $data['hash'] : (isset($data['FileHash']) ? $data['FileHash'] : '');
+        $name = isset($data['filename']) ? $data['filename'] : (isset($data['fileName']) ? $data['fileName'] : (isset($data['FileName']) ? $data['FileName'] : ''));
+        $album = isset($data['album_name']) ? $data['album_name'] : (isset($data['AlbumName']) ? $data['AlbumName'] : '');
+
+        // 优先使用 EMixSongID 作为 url_id（用于酷狗 VIP 播放）
+        $url_id = $hash;
+        if (isset($data['EMixSongID']) && $data['EMixSongID']) {
+            $url_id = $data['EMixSongID'];
+        }
         $result = array(
-            'id'       => $data['hash'],
-            'name'     => isset($data['filename']) ? $data['filename'] : $data['fileName'],
+            'id'       => $hash,
+            'name'     => $name,
             'artist'   => array(),
-            'album'    => isset($data['album_name']) ? $data['album_name'] : '',
-            'url_id'   => $data['hash'],
-            'pic_id'   => $data['hash'],
-            'lyric_id' => $data['hash'],
+            'album'    => $album,
+            'url_id'   => $url_id,
+            'pic_id'   => $hash,
+            'lyric_id' => $hash,
             'source'   => 'kugou',
         );
         list($result['artist'], $result['name']) = explode(' - ', $result['name'], 2);
