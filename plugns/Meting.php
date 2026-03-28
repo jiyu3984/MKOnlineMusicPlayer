@@ -1764,7 +1764,7 @@ class Meting
     {
         if (strlen($data) < 4) return '';
         $data = substr($data, 4);
-        $key = array(64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 219, 121, 135);
+        $key = array(64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 219, 121, 135, 110, 236, 231);
         $key_len = count($key);
         $decrypted = '';
         for ($i = 0; $i < strlen($data); $i++) {
