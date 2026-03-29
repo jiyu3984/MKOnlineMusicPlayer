@@ -268,6 +268,7 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
                 var statusEl = document.getElementById('scanStatus');
                 var state = data.data ? data.data.status : -1;
 
+                var errCode = data.error_code || 0;
                 if (state === 4) {
                     statusEl.className = 'status status-ok';
                     statusEl.textContent = '登录成功，Cookie 已保存！';
@@ -279,10 +280,18 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
                 } else if (state === 0) {
                     statusEl.className = 'status status-info';
                     statusEl.textContent = '等待扫码...';
-                } else {
+                } else if (state === 1) {
                     statusEl.className = 'status status-warn';
                     statusEl.textContent = '二维码已过期，请刷新';
                     clearInterval(pollTimer);
+                } else if (state === 3) {
+                    statusEl.className = 'status status-warn';
+                    statusEl.textContent = '已取消登录';
+                    clearInterval(pollTimer);
+                } else {
+                    // 未知状态，继续轮询不要停止
+                    statusEl.className = 'status status-info';
+                    statusEl.textContent = '等待中... (status=' + state + ', err=' + errCode + ')';
                 }
             });
         }
