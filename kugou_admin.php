@@ -111,7 +111,7 @@ if (isset($_GET['action'])) {
         $status = isset($data['data']['status']) ? $data['data']['status'] : -1;
 
         // 记录所有轮询响应
-        @file_put_contents('cache/kugou_login_status.txt', date('H:i:s') . " status=$status body=" . substr($body, 0, 300) . "\n", FILE_APPEND);
+        @file_put_contents(__DIR__ . '/cache/kugou_login_status.txt', date('H:i:s') . " status=$status body=" . substr($body, 0, 300) . "\n", FILE_APPEND);
 
         // 登录成功：status >= 4 或 token 存在
         $token = isset($data['data']['token']) ? $data['data']['token'] : '';
@@ -268,9 +268,18 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
         // 检查扫码状态
         function checkScan() {
             if (!currentQrcode) return;
-            fetch('kugou_admin.php?action=check&qrcode=' + encodeURIComponent(currentQrcode)).then(r => r.json()).then(data => {
+            fetch('kugou_admin.php?action=check&qrcode=' + encodeURIComponent(currentQrcode)).then(r => r.text()).then(text => {
                 var statusEl = document.getElementById('scanStatus');
+                console.log('poll response:', text);
+                var data;
+                try { data = JSON.parse(text); } catch(e) {
+                    statusEl.className = 'status status-err';
+                    statusEl.textContent = '响应解析失败: ' + text.substring(0, 100);
+                    return;
+                }
                 var state = data.data ? data.data.status : -1;
+                // 只要有 token 就是成功（不依赖 status 值）
+                if (data.cookie_saved) { state = 4; }
 
                 var errCode = data.error_code || 0;
                 if (state === 4) {
