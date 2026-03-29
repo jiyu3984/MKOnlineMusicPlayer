@@ -110,10 +110,8 @@ if (isset($_GET['action'])) {
 
         $status = isset($data['data']['status']) ? $data['data']['status'] : -1;
 
-        // 记录非等待状态的响应（用于调试）
-        if ($status != 1) {
-            @file_put_contents('cache/kugou_login_status.txt', date('H:i:s') . " status=$status body=$body\n", FILE_APPEND);
-        }
+        // 记录所有轮询响应
+        @file_put_contents('cache/kugou_login_status.txt', date('H:i:s') . " status=$status body=" . substr($body, 0, 300) . "\n", FILE_APPEND);
 
         // 登录成功：status >= 4 或 token 存在
         $token = isset($data['data']['token']) ? $data['data']['token'] : '';
