@@ -48,7 +48,7 @@ if (isset($_POST['password'])) {
 
 if (isset($_GET['logout'])) {
     session_destroy();
-    header('Location: admin.php');
+    header('Location: kugou_admin.php');
     exit;
 }
 
@@ -222,7 +222,7 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
 
         // 检查 Cookie 状态
         function checkStatus() {
-            fetch('admin.php?action=status').then(r => r.json()).then(data => {
+            fetch('kugou_admin.php?action=status').then(r => r.json()).then(data => {
                 var el = document.getElementById('cookieStatus');
                 if (data.has_cookie) {
                     el.innerHTML = '<div class="status status-ok">Cookie 有效</div>' +
@@ -244,7 +244,7 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
             document.getElementById('scanStatus').className = 'status status-info';
             document.getElementById('scanStatus').textContent = '正在获取二维码...';
 
-            fetch('admin.php?action=qrcode').then(r => r.json()).then(data => {
+            fetch('kugou_admin.php?action=qrcode').then(r => r.json()).then(data => {
                 if (data.data && data.data.qrcode) {
                     currentQrcode = data.data.qrcode;
                     // 用酷狗扫码URL生成二维码图片
@@ -266,7 +266,7 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
         // 检查扫码状态
         function checkScan() {
             if (!currentQrcode) return;
-            fetch('admin.php?action=check&qrcode=' + encodeURIComponent(currentQrcode)).then(r => r.json()).then(data => {
+            fetch('kugou_admin.php?action=check&qrcode=' + encodeURIComponent(currentQrcode)).then(r => r.json()).then(data => {
                 var statusEl = document.getElementById('scanStatus');
                 var state = data.data ? data.data.status : -1;
 
@@ -297,7 +297,7 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
         // 清除 Cookie
         function clearCookie() {
             if (!confirm('确定清除Cookie？')) return;
-            fetch('admin.php?action=clear').then(r => r.json()).then(() => {
+            fetch('kugou_admin.php?action=clear').then(r => r.json()).then(() => {
                 checkStatus();
             });
         }
