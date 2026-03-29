@@ -123,7 +123,7 @@ if (isset($_GET['action'])) {
                 . '; userid=' . $userid;
             @file_put_contents(__DIR__ . '/cache/kugou_cookie.txt', $full_cookie);
             $data['cookie_saved'] = true;
-            $data['data']['status'] = 4; // 强制标记为成功
+            $data['data']['status'] = 4;
         }
 
         die(json_encode($data));

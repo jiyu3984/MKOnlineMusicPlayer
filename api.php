@@ -14,8 +14,8 @@ $netease_cookie = '';
 /************ ↓↓↓↓↓ 酷狗音乐VIP配置（直接粘贴Cookie 或 通过admin.php扫码自动获取） ↓↓↓↓↓ ***************/
 $kugou_cookie = '';
 // 如果手动配置为空，自动读取扫码登录保存的Cookie
-if (!$kugou_cookie && file_exists('cache/kugou_cookie.txt')) {
-    $kugou_cookie = trim(file_get_contents('cache/kugou_cookie.txt'));
+if (!$kugou_cookie && file_exists(__DIR__ . '/cache/kugou_cookie.txt')) {
+    $kugou_cookie = trim(file_get_contents(__DIR__ . '/cache/kugou_cookie.txt'));
 }
 /************ ↑↑↑↑↑ 酷狗音乐VIP配置 ↑↑↑↑↑ ***************/
 /**
