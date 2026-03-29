@@ -33,10 +33,9 @@ if (isset($_GET['action'])) {
 
     $action = $_GET['action'];
 
-    // 获取酷狗登录二维码
+    // 获取酷狗登录二维码（v1 API）
     if ($action === 'qrcode') {
-        $qrcode_txt = 'https://h5.kugou.com/apps/loginQRCode/html/index.html?appid=1014&';
-        $url = 'https://login-user.kugou.com/v2/qrcode?appid=1014&type=1&plat=4&srcappid=2919&qrcode_txt=' . urlencode($qrcode_txt) . '&_=' . time();
+        $url = 'https://login-user.kugou.com/v1/autologin/qrcode/get?appid=1014&clientver=11440&plat=4&_=' . time();
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -56,7 +55,7 @@ if (isset($_GET['action'])) {
         if (!$qrcode) die(json_encode(array('error' => '缺少qrcode参数')));
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://login-user.kugou.com/v2/get_userinfo_qrcode?plat=4&appid=1014&srcappid=2919&qrcode=' . urlencode($qrcode) . '&_=' . time());
+        curl_setopt($ch, CURLOPT_URL, 'https://login-user.kugou.com/v1/autologin/qrcode/state?appid=1014&qrcode=' . urlencode($qrcode) . '&_=' . time());
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_HEADER, true);
@@ -72,8 +71,8 @@ if (isset($_GET['action'])) {
 
         $data = json_decode($body, true);
 
-        // 登录成功（v2 API status==4 表示确认登录）
-        if (isset($data['data']['status']) && $data['data']['status'] == 4) {
+        // 登录成功（v1 API status==2 表示确认登录）
+        if (isset($data['data']['status']) && $data['data']['status'] == 2) {
             // 从响应头提取 Set-Cookie
             preg_match_all('/Set-Cookie:\s*([^\r\n]+)/i', $header, $cookie_matches);
             $cookies = array();
@@ -234,9 +233,8 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
             fetch('admin.php?action=qrcode').then(r => r.json()).then(data => {
                 if (data.data && data.data.qrcode) {
                     currentQrcode = data.data.qrcode;
-                    // 用第三方 QR 生成服务渲染二维码（内容是酷狗扫码URL）
-                    var scanUrl = 'https://h5.kugou.com/apps/loginQRCode/html/index.html?qrcode=' + currentQrcode;
-                    var qrImgUrl = data.data.img_url || ('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(scanUrl));
+                    // v1 API 直接提供二维码图片 URL
+                    var qrImgUrl = 'https://login-user.kugou.com/v1/autologin/qrcode/qr?qrcode=' + currentQrcode + '&appid=1014';
                     document.getElementById('qrImg').src = qrImgUrl;
                     document.getElementById('scanStatus').textContent = '请用酷狗APP扫描二维码';
                     // 开始轮询
@@ -258,12 +256,12 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
                 var statusEl = document.getElementById('scanStatus');
                 var state = data.data ? data.data.status : -1;
 
-                if (state === 4) {
+                if (state === 2) {
                     statusEl.className = 'status status-ok';
                     statusEl.textContent = '登录成功，Cookie 已保存！';
                     clearInterval(pollTimer);
                     checkStatus();
-                } else if (state === 1 || state === 2) {
+                } else if (state === 1) {
                     statusEl.className = 'status status-info';
                     statusEl.textContent = '已扫码，请在手机上确认登录';
                 } else if (state === 0) {
