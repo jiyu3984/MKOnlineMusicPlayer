@@ -11,12 +11,9 @@
 $netease_cookie = '';
 /************ ↑↑↑↑↑ 如果网易云音乐歌曲获取失效，请将你的 COOKIE 放到这儿 ↑↑↑↑↑ ***************/
 
-/************ ↓↓↓↓↓ 酷狗音乐VIP配置 ↓↓↓↓↓ ***************/
-$kugou_token = '52532e52444eb6c4082cf365dbd9897c1f2a9892d178f349f3392726cf9f2358';  // 酷狗登录token（Cookie中的 t 字段）
-$kugou_userid = '2018440906';    // 酷狗用户ID（Cookie中的 KugooID 字段）
-$kugou_mid = 'ae5ab587322911f3d6cfd08310e89df9';    // 设备ID（Cookie中的 kg_mid 字段）
-$kugou_dfid = '0jKyd0111ReE1w3tGp2dVcyX';           // 设备指纹（Cookie中的 dfid 字段）
-/************ ↑↑↑↑↑ 酷狗音乐VIP配置 ↑↑↑↑↑ ***************/
+/************ ↓↓↓↓↓ 酷狗音乐VIP配置（直接粘贴浏览器Cookie即可） ↓↓↓↓↓ ***************/
+$kugou_cookie = 'kg_mid=ae5ab587322911f3d6cfd08310e89df9; ACK_SERVER_10017=%7B%22list%22%3A%5B%5B%22gzverifycode.service.kugou.com%22%5D%5D%7D; ACK_SERVER_10015=%7B%22list%22%3A%5B%5B%22gzlogin-user.kugou.com%22%5D%5D%7D; ACK_SERVER_10016=%7B%22list%22%3A%5B%5B%22gzreg-user.kugou.com%22%5D%5D%7D; Hm_lvt_aedee6983d4cfc62f509129360d6bb3d=1774618152; HMACCOUNT=22BAB1AE9481FA19; kg_dfid=0jKyd0111ReE1w3tGp2dVcyX; kg_dfid_collect=d41d8cd98f00b204e9800998ecf8427e; kg_mid_temp=ae5ab587322911f3d6cfd08310e89df9; KuGoo=KugooID=2018440906&KugooPwd=B75B6A5922CB3ED59527EB556A56FDC0&NickName=%u5b63%u96e8&Pic=http://imge.kugou.com/kugouicon/165/20250906/20250906202508864786.jpg&RegState=1&RegFrom=&t=52532e52444eb6c4082cf365dbd9897c1f2a9892d178f349f3392726cf9f2358&a_id=1014&ct=1774618165&UserName=%u006b%u0067%u006f%u0070%u0065%u006e%u0032%u0030%u0031%u0038%u0034%u0034%u0030%u0039%u0030%u0036&t1=; KugooID=2018440906; t=52532e52444eb6c4082cf365dbd9897c1f2a9892d178f349f3392726cf9f2358; a_id=1014; UserName=kgopen2018440906; mid=ae5ab587322911f3d6cfd08310e89df9; dfid=0jKyd0111ReE1w3tGp2dVcyX; CheckCode=czozMjoiYjhiOGRlNDRiMTFhYTFiOGMzODA2OTYyYzM1OTU5ZGMiOw%3D%3D; Hm_lpvt_aedee6983d4cfc62f509129360d6bb3d=1774618252';
+/************ ↑↑↑↑↑ 酷狗音乐VIP配置（直接粘贴浏览器Cookie即可） ↑↑↑↑↑ ***************/
 /**
 * cookie 获取及使用方法见 
 * https://github.com/mengkunsoft/MKOnlineMusicPlayer/wiki/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E9%97%AE%E9%A2%98
@@ -63,8 +60,23 @@ if($source == 'kugou' || $source == 'baidu' || $source == 'tencent') {
 if(($source == 'netease') && $netease_cookie) {
     $API->cookie($netease_cookie);    // 解决网易云 Cookie 失效
 }
-if(($source == 'kugou') && $kugou_token) {
-    $API->kugouVip($kugou_userid, $kugou_token, $kugou_mid, $kugou_dfid);
+if(($source == 'kugou') && $kugou_cookie) {
+    // 从完整Cookie字符串中自动解析所需字段
+    $kugou_params = array();
+    foreach (explode(';', $kugou_cookie) as $item) {
+        $item = trim($item);
+        if ($item && strpos($item, '=') !== false) {
+            list($k, $v) = explode('=', $item, 2);
+            $kugou_params[trim($k)] = trim($v);
+        }
+    }
+    $kugou_token = isset($kugou_params['t']) ? $kugou_params['t'] : '';
+    $kugou_userid = isset($kugou_params['KugooID']) ? $kugou_params['KugooID'] : '0';
+    $kugou_mid = isset($kugou_params['kg_mid']) ? $kugou_params['kg_mid'] : (isset($kugou_params['mid']) ? $kugou_params['mid'] : '');
+    $kugou_dfid = isset($kugou_params['dfid']) ? $kugou_params['dfid'] : (isset($kugou_params['kg_dfid']) ? $kugou_params['kg_dfid'] : '');
+    if ($kugou_token) {
+        $API->kugouVip($kugou_userid, $kugou_token, $kugou_mid, $kugou_dfid);
+    }
 }
 
 // 没有缓存文件夹则创建
