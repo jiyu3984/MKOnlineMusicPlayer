@@ -93,22 +93,22 @@ if (isset($_GET['action'])) {
         if (!$qrcode) die(json_encode(array('error' => '缺少qrcode参数')));
 
         $mid = @file_get_contents('cache/kugou_mid.txt') ?: md5(uniqid());
-        // 尝试 v1 和 v2 两个轮询接口
-        $qrcode_short = preg_replace('/1014$/', '', $qrcode); // 尝试去掉尾部 appid
-        $urls = array(
-            'https://login-user.kugou.com/v1/autologin/qrcode/state?appid=1014&qrcode=' . urlencode($qrcode),
-            'https://login-user.kugou.com/v1/autologin/qrcode/state?appid=1014&qrcode=' . urlencode($qrcode_short),
+        // v2 轮询需要完整签名
+        $params = array(
+            'appid'      => '1014',
+            'clienttime' => strval(round(microtime(true) * 1000)),
+            'clientver'  => '20000',
+            'mid'        => $mid,
+            'plat'       => '4',
+            'qrcode'     => $qrcode,
+            'srcappid'   => '2919',
+            'uuid'       => $mid,
         );
-
-        $body = '';
-        $data = null;
-        foreach ($urls as $url) {
-            $body = kugou_curl($url);
-            $data = json_decode($body, true);
-            if ($data && isset($data['data']['status'])) break;
-        }
-
-        if (!$data) $data = array('data' => array('status' => -1), 'error_code' => -1);
+        $params['signature'] = kugou_sign($params);
+        $url = 'https://login-user.kugou.com/v2/get_userinfo_qrcode?' . http_build_query($params);
+        $body = kugou_curl($url);
+        $data = json_decode($body, true);
+        if (!$data) $data = array('data' => array('status' => -1));
 
         // 调试：记录轮询结果
         @file_put_contents('cache/kugou_poll_debug.txt', date('H:i:s') . ' qrcode=' . substr($qrcode, 0, 20) . '... status=' . (isset($data['data']['status']) ? $data['data']['status'] : 'null') . ' err=' . (isset($data['error_code']) ? $data['error_code'] : '') . ' body=' . substr($body, 0, 200) . "\n", FILE_APPEND);
@@ -283,19 +283,15 @@ $is_logged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'];
                 } else if (state === 2) {
                     statusEl.className = 'status status-info';
                     statusEl.textContent = '已扫码，请在手机上确认登录';
-                } else if (state === 0) {
+                } else if (state === 0 || state === 1) {
+                    // v2 API: status=0或1都表示等待扫码
                     statusEl.className = 'status status-info';
-                    statusEl.textContent = '等待扫码...';
-                } else if (state === 1) {
-                    statusEl.className = 'status status-warn';
-                    statusEl.textContent = '二维码已过期，请刷新';
-                    clearInterval(pollTimer);
+                    statusEl.textContent = '等待扫码... (' + state + ')';
                 } else if (state === 3) {
                     statusEl.className = 'status status-warn';
-                    statusEl.textContent = '已取消登录';
+                    statusEl.textContent = '已取消或已过期，请刷新';
                     clearInterval(pollTimer);
                 } else {
-                    // 未知状态，继续轮询不要停止
                     statusEl.className = 'status status-info';
                     statusEl.textContent = '等待中... (status=' + state + ', err=' + errCode + ')';
                 }
