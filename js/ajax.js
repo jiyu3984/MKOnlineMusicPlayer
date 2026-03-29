@@ -222,7 +222,7 @@ function ajaxPlayList(lid, id, callback) {
             // 存储歌单信息
             var tempList = {
                 id: lid,    // 列表的网易云 id
-                name: jsonData.playlist.name,   // 列表名字
+                name: musicList[id].name || jsonData.playlist.name,   // 优先使用自定义名字
                 cover: jsonData.playlist.coverImgUrl,   // 列表封面
                 creatorName: jsonData.playlist.creator.nickname,   // 列表创建者名字
                 creatorAvatar: jsonData.playlist.creator.avatarUrl,   // 列表创建者头像
