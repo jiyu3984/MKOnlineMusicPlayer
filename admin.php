@@ -93,17 +93,22 @@ if (isset($_GET['action'])) {
         if (!$qrcode) die(json_encode(array('error' => '缺少qrcode参数')));
 
         $mid = @file_get_contents('cache/kugou_mid.txt') ?: md5(uniqid());
-        // 轮询只对基础参数签名
-        $params = array(
-            'appid'    => '1014',
-            'plat'     => '4',
-            'qrcode'   => $qrcode,
-            'srcappid' => '2919',
+        // 尝试 v1 和 v2 两个轮询接口
+        $qrcode_short = preg_replace('/1014$/', '', $qrcode); // 尝试去掉尾部 appid
+        $urls = array(
+            'https://login-user.kugou.com/v1/autologin/qrcode/state?appid=1014&qrcode=' . urlencode($qrcode),
+            'https://login-user.kugou.com/v1/autologin/qrcode/state?appid=1014&qrcode=' . urlencode($qrcode_short),
         );
-        $params['signature'] = kugou_sign($params);
-        $url = 'https://login-user.kugou.com/v2/get_userinfo_qrcode?' . http_build_query($params);
-        $body = kugou_curl($url);
-        $data = json_decode($body, true);
+
+        $body = '';
+        $data = null;
+        foreach ($urls as $url) {
+            $body = kugou_curl($url);
+            $data = json_decode($body, true);
+            if ($data && isset($data['data']['status'])) break;
+        }
+
+        if (!$data) $data = array('data' => array('status' => -1), 'error_code' => -1);
 
         // 调试：记录轮询结果
         @file_put_contents('cache/kugou_poll_debug.txt', date('H:i:s') . ' qrcode=' . substr($qrcode, 0, 20) . '... status=' . (isset($data['data']['status']) ? $data['data']['status'] : 'null') . ' err=' . (isset($data['error_code']) ? $data['error_code'] : '') . ' body=' . substr($body, 0, 200) . "\n", FILE_APPEND);
