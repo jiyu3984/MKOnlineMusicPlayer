@@ -40,12 +40,26 @@ if (isset($_GET['action'])) {
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
             'Referer: https://www.kugou.com/',
         ));
         $result = curl_exec($ch);
+        $err = curl_error($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
+        // 调试：如果返回为空或非JSON
+        if (!$result || $result[0] !== '{') {
+            die(json_encode(array(
+                'debug' => true,
+                'curl_error' => $err,
+                'http_code' => $code,
+                'raw_response' => substr($result, 0, 500),
+                'url' => $url,
+            )));
+        }
         die($result);
     }
 
