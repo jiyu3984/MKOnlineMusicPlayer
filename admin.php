@@ -93,19 +93,9 @@ if (isset($_GET['action'])) {
         if (!$qrcode) die(json_encode(array('error' => '缺少qrcode参数')));
 
         $mid = @file_get_contents('cache/kugou_mid.txt') ?: md5(uniqid());
-        $params = array(
-            'appid'      => '1014',
-            'clienttime' => strval(round(microtime(true) * 1000)),
-            'clientver'  => '20000',
-            'mid'        => $mid,
-            'plat'       => '4',
-            'qrcode'     => $qrcode,
-            'srcappid'   => '2919',
-            'uuid'       => $mid,
-        );
-        $params['signature'] = kugou_sign($params);
-
-        $url = 'https://login-user.kugou.com/v2/get_userinfo_qrcode?' . http_build_query($params);
+        // 轮询只需基础参数，不需要签名
+        $url = 'https://login-user.kugou.com/v2/get_userinfo_qrcode?'
+            . 'plat=4&appid=1014&srcappid=2919&qrcode=' . urlencode($qrcode);
         $body = kugou_curl($url);
         $data = json_decode($body, true);
 
