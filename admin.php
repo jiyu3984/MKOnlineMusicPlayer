@@ -33,34 +33,44 @@ if (isset($_GET['action'])) {
 
     $action = $_GET['action'];
 
-    // 获取酷狗登录二维码（v1 API）
+    // 获取酷狗登录二维码
     if ($action === 'qrcode') {
-        $url = 'https://login-user.kugou.com/v1/autologin/qrcode/get?appid=1014&clientver=11440&plat=4&_=' . time();
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
-            'Referer: https://www.kugou.com/',
-        ));
-        $result = curl_exec($ch);
-        $err = curl_error($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        // 尝试多个 API 地址
+        $urls = array(
+            'https://login-user.kugou.com/v1/autologin/qrcode/get?appid=1014&clientver=11440&plat=4&_=' . time(),
+            'https://login-user.kugou.com/v2/qrcode?appid=1014&type=1&plat=4&srcappid=2919&_=' . time(),
+            'http://login-user.kugou.com/v1/autologin/qrcode/get?appid=1014&clientver=11440&plat=4&_=' . time(),
+        );
+        $results = array();
+        foreach ($urls as $url) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_ENCODING, 'gzip');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+                'Referer: https://www.kugou.com/',
+                'Accept: application/json, text/plain, */*',
+            ));
+            $result = curl_exec($ch);
+            $err = curl_error($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-        // 调试：如果返回为空或非JSON
-        if (!$result || $result[0] !== '{') {
-            die(json_encode(array(
-                'debug' => true,
-                'curl_error' => $err,
-                'http_code' => $code,
-                'raw_response' => substr($result, 0, 500),
-                'url' => $url,
-            )));
+            $trimmed = trim($result);
+            $results[] = array('url' => $url, 'code' => $code, 'error' => $err, 'body' => substr($trimmed, 0, 300));
+
+            // 如果获取到有效 JSON 且包含 qrcode，直接返回
+            $json = json_decode($trimmed, true);
+            if ($json && isset($json['data']['qrcode'])) {
+                die($trimmed);
+            }
         }
-        die($result);
+        // 全部失败，返回调试信息
+        die(json_encode(array('debug' => true, 'attempts' => $results)));
     }
 
     // 检查扫码状态
