@@ -66,7 +66,7 @@ if (isset($_GET['action'])) {
     if ($action === 'qrcode') {
         $mid = md5(uniqid(mt_rand(), true));
         // 保存 mid 供后续使用
-        @file_put_contents('cache/kugou_mid.txt', $mid);
+        @file_put_contents(__DIR__ . '/cache/kugou_mid.txt', $mid);
 
         $params = array(
             'appid'      => '1014',
@@ -90,7 +90,7 @@ if (isset($_GET['action'])) {
         $qrcode = isset($_GET['qrcode']) ? $_GET['qrcode'] : '';
         if (!$qrcode) die(json_encode(array('error' => '缺少qrcode参数')));
 
-        $mid = @file_get_contents('cache/kugou_mid.txt') ?: md5(uniqid());
+        $mid = @file_get_contents(__DIR__ . '/cache/kugou_mid.txt') ?: md5(uniqid());
         // v2 轮询需要完整签名
         $params = array(
             'appid'      => '1014',
@@ -121,7 +121,7 @@ if (isset($_GET['action'])) {
             $full_cookie = 't=' . $token . '; KugooID=' . $userid
                 . '; kg_mid=' . $mid . '; mid=' . $mid . '; dfid=' . md5($mid . $token)
                 . '; userid=' . $userid;
-            file_put_contents('cache/kugou_cookie.txt', $full_cookie);
+            @file_put_contents(__DIR__ . '/cache/kugou_cookie.txt', $full_cookie);
             $data['cookie_saved'] = true;
             $data['data']['status'] = 4; // 强制标记为成功
         }
@@ -131,7 +131,7 @@ if (isset($_GET['action'])) {
 
     // 查看当前 Cookie 状态
     if ($action === 'status') {
-        $cookie_file = 'cache/kugou_cookie.txt';
+        $cookie_file = __DIR__ . '/cache/kugou_cookie.txt';
         $result = array('has_cookie' => false);
         if (file_exists($cookie_file)) {
             $cookie = file_get_contents($cookie_file);
@@ -148,7 +148,7 @@ if (isset($_GET['action'])) {
 
     // 清除 Cookie
     if ($action === 'clear') {
-        @unlink('cache/kugou_cookie.txt');
+        @unlink(__DIR__ . '/cache/kugou_cookie.txt');
         die(json_encode(array('success' => true)));
     }
 
