@@ -82,6 +82,8 @@ if (isset($_GET['action'])) {
 
         $url = 'https://login-user.kugou.com/v2/qrcode?' . http_build_query($params);
         $result = kugou_curl($url);
+        // 调试
+        @file_put_contents('config/kugou_poll_debug.txt', "=== NEW QR === " . date('H:i:s') . "\nmid=" . $mid . "\nresponse=" . $result . "\n");
         die($result);
     }
 
@@ -106,6 +108,9 @@ if (isset($_GET['action'])) {
         $url = 'https://login-user.kugou.com/v2/get_userinfo_qrcode?' . http_build_query($params);
         $body = kugou_curl($url);
         $data = json_decode($body, true);
+
+        // 调试：记录轮询结果
+        @file_put_contents('config/kugou_poll_debug.txt', date('H:i:s') . ' qrcode=' . substr($qrcode, 0, 20) . '... status=' . (isset($data['data']['status']) ? $data['data']['status'] : 'null') . ' err=' . (isset($data['error_code']) ? $data['error_code'] : '') . ' body=' . substr($body, 0, 200) . "\n", FILE_APPEND);
 
         // 登录成功（v2 API status==4 表示确认登录）
         if (isset($data['data']['status']) && $data['data']['status'] == 4) {
