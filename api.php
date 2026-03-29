@@ -11,9 +11,13 @@
 $netease_cookie = '';
 /************ ↑↑↑↑↑ 如果网易云音乐歌曲获取失效，请将你的 COOKIE 放到这儿 ↑↑↑↑↑ ***************/
 
-/************ ↓↓↓↓↓ 酷狗音乐VIP配置（直接粘贴浏览器Cookie即可） ↓↓↓↓↓ ***************/
-$kugou_cookie = 'kg_mid=ae5ab587322911f3d6cfd08310e89df9; ACK_SERVER_10017=%7B%22list%22%3A%5B%5B%22gzverifycode.service.kugou.com%22%5D%5D%7D; ACK_SERVER_10015=%7B%22list%22%3A%5B%5B%22gzlogin-user.kugou.com%22%5D%5D%7D; ACK_SERVER_10016=%7B%22list%22%3A%5B%5B%22gzreg-user.kugou.com%22%5D%5D%7D; Hm_lvt_aedee6983d4cfc62f509129360d6bb3d=1774618152; HMACCOUNT=22BAB1AE9481FA19; kg_dfid=0jKyd0111ReE1w3tGp2dVcyX; kg_dfid_collect=d41d8cd98f00b204e9800998ecf8427e; kg_mid_temp=ae5ab587322911f3d6cfd08310e89df9; KuGoo=KugooID=2018440906&KugooPwd=B75B6A5922CB3ED59527EB556A56FDC0&NickName=%u5b63%u96e8&Pic=http://imge.kugou.com/kugouicon/165/20250906/20250906202508864786.jpg&RegState=1&RegFrom=&t=52532e52444eb6c4082cf365dbd9897c1f2a9892d178f349f3392726cf9f2358&a_id=1014&ct=1774618165&UserName=%u006b%u0067%u006f%u0070%u0065%u006e%u0032%u0030%u0031%u0038%u0034%u0034%u0030%u0039%u0030%u0036&t1=; KugooID=2018440906; t=52532e52444eb6c4082cf365dbd9897c1f2a9892d178f349f3392726cf9f2358; a_id=1014; UserName=kgopen2018440906; mid=ae5ab587322911f3d6cfd08310e89df9; dfid=0jKyd0111ReE1w3tGp2dVcyX; CheckCode=czozMjoiYjhiOGRlNDRiMTFhYTFiOGMzODA2OTYyYzM1OTU5ZGMiOw%3D%3D; Hm_lpvt_aedee6983d4cfc62f509129360d6bb3d=1774618252';
-/************ ↑↑↑↑↑ 酷狗音乐VIP配置（直接粘贴浏览器Cookie即可） ↑↑↑↑↑ ***************/
+/************ ↓↓↓↓↓ 酷狗音乐VIP配置（直接粘贴Cookie 或 通过admin.php扫码自动获取） ↓↓↓↓↓ ***************/
+$kugou_cookie = '';
+// 如果手动配置为空，自动读取扫码登录保存的Cookie
+if (!$kugou_cookie && file_exists('config/kugou_cookie.txt')) {
+    $kugou_cookie = trim(file_get_contents('config/kugou_cookie.txt'));
+}
+/************ ↑↑↑↑↑ 酷狗音乐VIP配置 ↑↑↑↑↑ ***************/
 /**
 * cookie 获取及使用方法见 
 * https://github.com/mengkunsoft/MKOnlineMusicPlayer/wiki/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E9%97%AE%E9%A2%98
