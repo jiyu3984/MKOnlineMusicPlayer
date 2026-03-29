@@ -108,20 +108,24 @@ if (isset($_GET['action'])) {
         $data = json_decode($body, true);
         if (!$data) $data = array('data' => array('status' => -1));
 
+        $status = isset($data['data']['status']) ? $data['data']['status'] : -1;
 
-        // 登录成功（v2 API status==4 表示确认登录）
-        if (isset($data['data']['status']) && $data['data']['status'] == 4) {
-            $token = isset($data['data']['token']) ? $data['data']['token'] : '';
-            $userid = isset($data['data']['userid']) ? $data['data']['userid'] : '';
+        // 记录非等待状态的响应（用于调试）
+        if ($status != 1) {
+            @file_put_contents('cache/kugou_login_status.txt', date('H:i:s') . " status=$status body=$body\n", FILE_APPEND);
+        }
 
-            if ($token) {
-                // 构建 Cookie
-                $full_cookie = 't=' . $token . '; KugooID=' . $userid
-                    . '; kg_mid=' . $mid . '; mid=' . $mid . '; dfid=' . md5($mid . $token)
-                    . '; userid=' . $userid;
-                file_put_contents('cache/kugou_cookie.txt', $full_cookie);
-                $data['cookie_saved'] = true;
-            }
+        // 登录成功：status >= 4 或 token 存在
+        $token = isset($data['data']['token']) ? $data['data']['token'] : '';
+        $userid = isset($data['data']['userid']) ? $data['data']['userid'] : '';
+
+        if ($token && $userid) {
+            $full_cookie = 't=' . $token . '; KugooID=' . $userid
+                . '; kg_mid=' . $mid . '; mid=' . $mid . '; dfid=' . md5($mid . $token)
+                . '; userid=' . $userid;
+            file_put_contents('cache/kugou_cookie.txt', $full_cookie);
+            $data['cookie_saved'] = true;
+            $data['data']['status'] = 4; // 强制标记为成功
         }
 
         die(json_encode($data));
