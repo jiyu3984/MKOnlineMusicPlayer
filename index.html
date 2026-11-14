@@ -49,6 +49,8 @@
     <!-- 小屏幕样式修复 -->
     <link rel="stylesheet" type="text/css" href="css/small.css">
 
+    <link rel="stylesheet" href="css/player-view.css?v=20261115-pc-player">
+
     <!-- 自定义css样式 -->
     <style>
         #layer-placard-content {
@@ -85,7 +87,7 @@
         <div class="btn-bar">
             <!-- tab按钮区 -->
             <div class="btn-box" id="btn-area">
-                <span class="btn" data-action="player" hidden>播放器</span>
+                <button type="button" class="btn" data-action="player" aria-controls="player" aria-expanded="false">播放器</button>
                 <span class="btn" data-action="playing" title="正在播放列表">正在播放</span>
                 <span class="btn" data-action="sheet" title="音乐播放列表">播放列表</span>
                 <span class="btn" data-action="search" title="点击搜索音乐">歌曲搜索</span>
@@ -100,24 +102,42 @@
             <div id="main-list" class="music-list data-box"></div>
         </div>  <!--class="data-area"-->
 
-        <!-- 右侧封面及歌词展示 -->
-        <div class="player" id="player">
-            <!--歌曲封面-->
-            <div class="cover">
-                <img src="images/player_cover.png" class="music-cover" id="music-cover">
+        <!-- 封面与沉浸播放器共用同一份歌词和播放状态 -->
+        <section class="player" id="player" aria-label="音乐播放器">
+            <button type="button" class="player-close" id="player-close" aria-label="收起播放器" title="收起播放器（Esc）">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="player-layout">
+                <div class="turntable">
+                    <button type="button" class="cover" id="player-cover-button" aria-controls="player" aria-label="展开播放器" title="展开播放器">
+                        <img src="images/player_cover.png" class="music-cover" id="music-cover" alt="当前歌曲封面">
+                    </button>
+                    <span class="tonearm" aria-hidden="true"><i></i></span>
+                    <span class="turntable-label" aria-hidden="true">KUN MUSIC</span>
+                </div>
+                <div class="player-song">
+                    <div class="player-heading">
+                        <h1 id="player-song-title">未选择歌曲</h1>
+                        <p class="player-artist" id="player-song-artist">选择一首歌曲，开始播放</p>
+                        <p class="player-album" id="player-song-album"></p>
+                    </div>
+                    <div class="lyric">
+                        <ul id="lyric"></ul>
+                    </div>
+                </div>
             </div>
-            <!--滚动歌词-->
-            <div class="lyric">
-                <ul id="lyric"></ul>
-            </div>
-            <div id="music-info" title="点击查看歌曲信息"></div>
-        </div>
+            <button type="button" id="music-info" aria-label="查看歌曲信息" title="点击查看歌曲信息"></button>
+        </section>
     </div>  <!--class="container"-->
 </div>  <!--class="center"-->
 
 <!-- 播放器底部区域 -->
 <div class="footer">
     <div class="container">
+        <button type="button" class="now-playing-cover" id="now-playing-cover" aria-controls="player" aria-label="展开播放器" title="展开播放器">
+            <img src="images/player_cover.png" id="mini-cover" alt="当前歌曲封面">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
+        </button>
         <div class="con-btn">
             <a href="javascript:;" class="player-btn btn-prev" title="上一首"></a>
             <a href="javascript:;" class="player-btn btn-play" title="暂停/继续"></a>
@@ -149,19 +169,19 @@
 <script src="plugns/layui/layui.js"></script>
 
 <!-- 播放器主体功能模块 -->
-<script src="js/player.js?v=20261114-playback"></script>
+<script src="js/player.js?v=20261115-pc-player"></script>
 
 <!-- 播放器数据加载模块 -->
 <script src="js/ajax.js?v=20261114-security"></script>
 
 <!-- 播放器歌词解析模块 -->
-<script src="js/lyric.js?v=20261114-security"></script>
+<script src="js/lyric.js?v=20261115-pc-player"></script>
 
 <!-- 音乐列表配置 -->
 <script src="js/musicList.js"></script>
 
 <!-- 封装函数及ui交互模块 -->
-<script src="js/functions.js?v=20261114-security"></script>
+<script src="js/functions.js?v=20261115-pc-player"></script>
 
 <!-- 滚动条美化插件 -->
 <script src="js/jquery.mCustomScrollbar.concat.min.js"></script>

@@ -386,7 +386,7 @@ function play(music, attempt) {
     
     // 如果当前主界面显示的是播放历史，那么还需要刷新列表显示
     if(rem.dislist == 2 && rem.playlist !== 2) {
-        loadList(2);
+        loadList(2, true);
     } else {
         refreshList();  // 更新列表显示
     }
@@ -464,18 +464,21 @@ mkpgb = function(bar, percent, callback){
 };
 
 mkpgb.prototype = {
+    refreshBounds : function() {
+        var bar = $(this.bar);
+        this.minLength = bar.offset().left;
+        this.maxLength = bar.width() + this.minLength;
+    },
     // 进度条初始化
     init : function(){  
         var mk = this,mdown = false;
         // 加载进度条html元素
         $(mk.bar).html('<div class="mkpgb-bar"></div><div class="mkpgb-cur"></div><div class="mkpgb-dot"></div>');
         // 获取偏移量
-        mk.minLength = $(mk.bar).offset().left; 
-        mk.maxLength = $(mk.bar).width() + mk.minLength;
+        mk.refreshBounds();
         // 窗口大小改变偏移量重置
         $(window).resize(function(){
-            mk.minLength = $(mk.bar).offset().left; 
-            mk.maxLength = $(mk.bar).width() + mk.minLength;
+            mk.refreshBounds();
         });
         // 监听小点的鼠标按下事件
         $(mk.bar + " .mkpgb-dot").mousedown(function(e){
@@ -538,10 +541,14 @@ mkpgb.prototype = {
 
 // 快捷键切歌，代码来自 @茗血(https://www.52benxi.cn/)
 document.onkeydown = function showkey(e) {
+    if(e.defaultPrevented || e.isComposing) return;
     var key = e.keyCode || e.which || e.charCode;
     var ctrl = e.ctrlKey || e.metaKey;
-    var isFocus = $('input').is(":focus");  
+    var isFocus = $(e.target).closest('input,textarea,select,button,a,[role="button"],[contenteditable]:not([contenteditable="false"])').length > 0;
     if (ctrl && key == 37 && !isFocus) playList(rem.playid - 1);    // Ctrl+左方向键 切换上一首歌
     if (ctrl && key == 39 && !isFocus) playList(rem.playid + 1);    // Ctrl+右方向键 切换下一首歌
-    if (key == 32 && !isFocus) pause();         // 空格键 播放/暂停歌曲
+    if (key == 32 && !isFocus) {
+        e.preventDefault();
+        pause();         // 空格键 播放/暂停歌曲
+    }
 }

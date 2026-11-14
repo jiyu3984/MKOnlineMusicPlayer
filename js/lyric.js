@@ -93,7 +93,8 @@ function scrollLyric(time) {
 
     // 滚动平滑 - 修复居中问题
     if ($current.length > 0) {
-        let containerHeight = lyricArea.height();
+        let containerHeight = document.documentElement.clientWidth > 900 && document.body.classList.contains('player-view-open')
+            ? lyricArea.innerHeight() : lyricArea.height();
         let scrollPosition = $current.position().top + lyricArea.scrollTop() - (containerHeight / 2) + ($current.height() / 2);
         lyricArea.stop().animate({ scrollTop: scrollPosition }, 1000);
     }

@@ -78,12 +78,10 @@ $(function(){
     rem.errCount  = 0;                   // 连续播放失败的歌曲数归零
     rem.userAgent = navigator.userAgent; // 获取用户userAgent
     
-    window.onresize = function () {
+    window.addEventListener('resize', function () {
         rem.isMobile = isMobile.any();
-        if (navigator.userAgent !== rem.userAgent) {
-            location.reload();
-        }
-    }
+        renderDataBox();
+    });
 
     initProgress();     // 初始化音量条、进度条（进度条初始化要在 Audio 前，别问我为什么……）
     initAudio();    // 初始化 audio 标签，事件绑定
@@ -112,7 +110,7 @@ $(function(){
     $(".btn").click(function(){
         switch($(this).data("action")) {
             case "player":    // 播放器
-                dataBox("player");
+                dataBox("player", this);
             break;
             case "search":  // 搜索
                 searchBox();
@@ -126,6 +124,22 @@ $(function(){
                 dataBox("sheet");    // 在主界面显示出音乐专辑
             break;
         }
+    });
+
+    $('#player-cover-button,#now-playing-cover').on('click', function() {
+        dataBox('player', this);
+    });
+    $('#player-close').on('click', closePlayerView);
+    document.addEventListener('keydown', function(event) {
+        if(event.key === 'Escape' && rem.dataView === 'player' &&
+            !$(event.target).closest('.layui-layer').length) {
+            event.preventDefault();
+            closePlayerView();
+        }
+    });
+    rem.audio[0].addEventListener('playing', function() { $('#player').addClass('is-playing'); });
+    ['pause', 'ended', 'error'].forEach(function(type) {
+        rem.audio[0].addEventListener(type, function() { $('#player').removeClass('is-playing'); });
     });
     
     // 列表项双击播放
@@ -346,6 +360,9 @@ function getAudioTime () {
     var duration = audio.duration;
     var currentTime = audio.currentTime;
     if (duration && currentTime) {
+        if(document.documentElement.clientWidth > 900 && document.body.classList.contains('player-view-open')) {
+            return formatTime(currentTime) + ' / ' + formatTime(duration);
+        }
         return (formatTime(duration) + '/' + formatTime(currentTime));
     } else {
         return '00:00/00:00';
@@ -651,6 +668,14 @@ function ajaxShare(music) {
 // 改变右侧封面图像
 // 新的图像地址
 function changeCover(music) {
+    var currentMusic = musicList[1] && musicList[1].item[rem.playid];
+    if(currentMusic && (String(currentMusic.id) !== String(music.id) || currentMusic.source !== music.source)) return;
+    $('#player-song-title').text(music.name || '未选择歌曲');
+    $('#player-song-artist').text(music.artist || '未知歌手');
+    $('#player-song-album').text(music.album || '未知专辑');
+    var coverVersion = (rem.coverVersion || 0) + 1;
+    rem.coverVersion = coverVersion;
+    $('#music-cover').off('load.cover');
     var img = music.pic;    // 获取歌曲封面
     var animate = false,imgload = false;
     
@@ -665,13 +690,15 @@ function changeCover(music) {
         img = safeMediaUrl(img, 'images/player_cover.png');
         if(mkPlayer.mcoverbg === true && rem.isMobile)      // 移动端封面
         {    
-            $("#music-cover").load(function(){
+            $("#music-cover").one('load.cover', function(){
+                if(rem.coverVersion !== coverVersion) return;
                 $("#mobile-blur").css('background-image', 'url("' + img.replace(/["\\\n\r\f]/g, encodeURIComponent) + '")');
             });
         } 
         else if(mkPlayer.coverbg === true && !rem.isMobile)     // PC端封面
         { 
-            $("#music-cover").load(function(){
+            $("#music-cover").one('load.cover', function(){
+                if(rem.coverVersion !== coverVersion) return;
                 if(animate) {   // 渐变动画也已完成
                     $("#blur-img").backgroundBlur(img);    // 替换图像并淡出
                     $("#blur-img").animate({opacity:"1"}, 2000); // 背景更换特效
@@ -683,6 +710,7 @@ function changeCover(music) {
             
             // 渐变动画
             $("#blur-img").animate({opacity: "0.2"}, 1000, function(){
+                if(rem.coverVersion !== coverVersion) return;
                 if(imgload) {   // 如果图片已经加载好了
                     $("#blur-img").backgroundBlur(img);    // 替换图像并淡出
                     $("#blur-img").animate({opacity:"1"}, 2000); // 背景更换特效
@@ -693,13 +721,13 @@ function changeCover(music) {
         }
     }
     
-    $("#music-cover").attr("src", img);     // 改变右侧封面
+    $("#music-cover,#mini-cover").attr("src", img);     // 封面与底栏使用同一首歌曲
     $(".sheet-item[data-no='1'] .sheet-cover").attr('src', img);    // 改变正在播放列表的图像
 }
 
 
 // 向列表中载入某个播放列表
-function loadList(list) {
+function loadList(list, keepView) {
     if(musicList[list].isloading === true) {
         layer.msg('列表读取中...', {icon: 16,shade: [0.25,,'#000'],time: 500});
         return true;
@@ -707,7 +735,7 @@ function loadList(list) {
     
     rem.dislist = list;     // 记录当前显示的列表
     
-    dataBox("list");    // 在主界面显示出播放列表
+    if(!keepView) dataBox("list");    // 内部刷新历史记录时保留当前视图
     
     // 调试信息输出
     if(mkPlayer.debug) {
@@ -918,17 +946,47 @@ function sheetBar() {
 
 // 选择要显示哪个数据区
 // 参数：要显示的数据区（list、sheet、player）
-function dataBox(choose) {
+function dataBox(choose, opener) {
+    if(choose !== 'list' && choose !== 'sheet' && choose !== 'player') return;
+    var openingPlayer = choose === 'player' && rem.dataView !== 'player';
+    if(openingPlayer) {
+        rem.previousDataView = rem.dataView === 'sheet' ? 'sheet' : 'list';
+        rem.playerReturnFocus = opener || document.activeElement;
+    }
+    rem.dataView = choose;
+    renderDataBox();
+    if(openingPlayer) focusPlayerElement(document.getElementById('player-close'));
+}
+
+function closePlayerView() {
+    if(rem.dataView !== 'player') return;
+    var returnFocus = rem.playerReturnFocus;
+    dataBox(rem.previousDataView === 'sheet' ? 'sheet' : 'list');
+    rem.playerReturnFocus = null;
+    if(!focusPlayerElement(returnFocus)) {
+        focusPlayerElement(document.getElementById('now-playing-cover'));
+    }
+}
+
+function focusPlayerElement(element) {
+    if(!element || typeof element.focus !== 'function' || !$(element).is(':visible')) return false;
+    element.focus({ preventScroll: true });
+    return true;
+}
+
+// Reuse the same player and lyric nodes at either side of the 900px breakpoint.
+function renderDataBox() {
+    var choose = rem.dataView || 'list';
+    var playerOpen = choose === 'player';
+    var smallScreen = document.documentElement.clientWidth <= 900;
+    document.body.classList.toggle('player-view-open', playerOpen);
+    $('#player').stop(true, true).toggle(playerOpen || !smallScreen);
+    $('#main-list').stop(true, true).toggle(choose === 'list');
+    $('#sheet').stop(true, true).toggle(choose === 'sheet');
+    $('.btn[data-action="player"],#now-playing-cover,#player-cover-button').attr('aria-expanded', String(playerOpen));
     $('.btn-box .active').removeClass('active');
     switch(choose) {
         case "list":    // 显示播放列表
-            if($(".btn[data-action='player']").css('display') !== 'none') {
-                $("#player").hide();
-            } else if ($("#player").css('display') == 'none') {
-                $("#player").fadeIn();
-            }
-            $("#main-list").fadeIn();
-            $("#sheet").fadeOut();
             if(rem.dislist == 1 || rem.dislist == rem.playlist) {  // 正在播放
                 $(".btn[data-action='playing']").addClass('active');
             } else if(rem.dislist == 0) {  // 搜索
@@ -937,23 +995,27 @@ function dataBox(choose) {
         break;
         
         case "sheet":   // 显示专辑
-            if($(".btn[data-action='player']").css('display') !== 'none') {
-                $("#player").hide();
-            } else if ($("#player").css('display') == 'none') {
-                $("#player").fadeIn();
-            }
-            $("#sheet").fadeIn();
-            $("#main-list").fadeOut();
             $(".btn[data-action='sheet']").addClass('active');
         break;
         
         case "player":  // 显示播放器
-            $("#player").fadeIn();
-            $("#sheet").fadeOut();
-            $("#main-list").fadeOut();
             $(".btn[data-action='player']").addClass('active');
         break;
     }
+    if(rem.playerLyricFrame !== undefined) window.cancelAnimationFrame(rem.playerLyricFrame);
+    rem.playerLyricFrame = window.requestAnimationFrame(function() {
+        rem.playerLyricFrame = undefined;
+        if(typeof music_bar !== 'undefined' && music_bar && typeof music_bar.refreshBounds === 'function') {
+            music_bar.refreshBounds();
+        }
+        if(typeof volume_bar !== 'undefined' && volume_bar && typeof volume_bar.refreshBounds === 'function') {
+            volume_bar.refreshBounds();
+        }
+        rem.lastLyric = -1;
+        if(rem.audio && rem.audio[0] && rem.lyric && typeof refreshLyric === 'function') {
+            refreshLyric(rem.audio[0].currentTime || 0);
+        }
+    });
 }
 
 // 将当前歌曲加入播放历史
