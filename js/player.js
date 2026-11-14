@@ -35,25 +35,76 @@ var mkPlayer = {
 var rem = [];
 rem.source = "netease";  // 默认音乐源
 
+function newPlaybackAttempt() {
+    var attempt = { wanted: true, failed: false, source: '' };
+    rem.playbackAttempt = attempt;
+    return attempt;
+}
+
+function currentPlayback(attempt) {
+    return attempt && attempt === rem.playbackAttempt && attempt.wanted && !attempt.failed;
+}
+
+// A rejected play() and the media error event can describe the same failure.
+function requestAudioPlay(attempt) {
+    function rejected(error) {
+        if(!currentPlayback(attempt) || (error && error.name === 'AbortError')) return;
+        if(error && error.name === 'NotAllowedError') {
+            attempt.wanted = false;
+            audioPause();
+            layer.msg('请点击播放按钮继续播放');
+            return;
+        }
+        audioErr(null, attempt);
+    }
+    try {
+        var result = rem.audio[0].play();
+        if(result && typeof result.catch === 'function') result.catch(rejected);
+        return true;
+    } catch(error) {
+        rejected(error);
+        return false;
+    }
+}
+
 // 音频错误处理函数
-function audioErr() {
+function audioErr(event, attempt) {
+    attempt = attempt || rem.playbackAttempt;
     // 没播放过，直接跳过
-    if(rem.playlist === undefined) return true;
-    
-    if(rem.errCount > 10) { // 连续播放失败的歌曲过多
+    if(rem.playlist === undefined || !currentPlayback(attempt)) return true;
+    // Events left over from an old source must not fail the next track.
+    var audio = rem.audio[0];
+    if(event && (!attempt.source || !audio.error ||
+        (audio.currentSrc && audio.currentSrc !== attempt.source))) return true;
+    attempt.failed = true;
+    rem.errCount = (rem.errCount || 0) + 1;
+
+    if(rem.errCount >= 10) { // 连续播放失败的歌曲过多
+        attempt.wanted = false;
+        audio.pause();
+        audioPause();
         layer.msg('似乎出了点问题~播放已停止');
-        rem.errCount = 0;
     } else {
-        rem.errCount++;     // 记录连续播放失败的歌曲数目
         layer.msg('当前歌曲播放失败，自动播放下一首');
         nextMusic();    // 切换下一首歌
     } 
 }
 
+function audioPlaying() {
+    var attempt = rem.playbackAttempt;
+    var audio = rem.audio[0];
+    if(currentPlayback(attempt) && !audio.paused && !audio.error &&
+        (!audio.currentSrc || audio.currentSrc === attempt.source)) {
+        rem.errCount = 0; // Only actual playback breaks a consecutive failure streak.
+    }
+}
+
 // 点击暂停按钮的事件
 function pause() {
-    if(rem.paused === false) {  // 之前是播放状态
+    if(rem.paused === false || currentPlayback(rem.playbackAttempt)) {
+        if(rem.playbackAttempt) rem.playbackAttempt.wanted = false;
         rem.audio[0].pause();  // 暂停
+        audioPause();
     } else {
         // 第一次点播放
         if(rem.playlist === undefined) {
@@ -65,8 +116,15 @@ function pause() {
             playerSavedata('playing', musicList[1].item);   // 保存正在播放列表
             
             listClick(0);
+            return;
         }
-        rem.audio[0].play();
+        if(rem.playbackAttempt && !rem.playbackAttempt.source) {
+            playList(rem.playid);
+            return;
+        }
+        var attempt = newPlaybackAttempt();
+        attempt.source = rem.audio[0].src;
+        requestAudioPlay(attempt);
     }
 }
 
@@ -266,15 +324,18 @@ function playList(id) {
     
     // 记录正在播放的歌曲在正在播放列表中的 id
     rem.playid = id;
+    var attempt = newPlaybackAttempt();
 
     // 强制将歌曲url清空，以防止歌曲url过期
     musicList[1].item[id].url = "";
 
     // 如果链接为空，则 ajax 获取数据后再播放
     if(musicList[1].item[id].url === null || musicList[1].item[id].url === "") {
-        ajaxUrl(musicList[1].item[id], play);
+        ajaxUrl(musicList[1].item[id], function(music) {
+            if(currentPlayback(attempt)) play(music, attempt);
+        });
     } else {
-        play(musicList[1].item[id]);
+        play(musicList[1].item[id], attempt);
     }
 }
 
@@ -287,6 +348,7 @@ function initAudio() {
     // 绑定歌曲进度变化事件
     rem.audio[0].addEventListener('timeupdate', updateProgress);   // 更新进度
     rem.audio[0].addEventListener('play', audioPlay); // 开始播放了
+    rem.audio[0].addEventListener('playing', audioPlaying); // 已经成功输出音频
     rem.audio[0].addEventListener('pause', audioPause);   // 暂停
     $(rem.audio[0]).on('ended', autoNextMusic);   // 播放结束
     rem.audio[0].addEventListener('error', audioErr);   // 播放器错误处理
@@ -295,7 +357,9 @@ function initAudio() {
 
 // 播放音乐
 // 参数：要播放的音乐数组
-function play(music) {
+function play(music, attempt) {
+    attempt = attempt || newPlaybackAttempt();
+    if(!currentPlayback(attempt)) return false;
     // 调试信息输出
     if(mkPlayer.debug) {
         console.log('开始播放 - ' + music.name);
@@ -314,7 +378,7 @@ function play(music) {
     
     // 遇到错误播放下一首歌
     if(music.url == "err") {
-        audioErr(); // 调用错误处理函数
+        audioErr(null, attempt); // 调用错误处理函数
         return false;
     }
     
@@ -333,13 +397,13 @@ function play(music) {
         }
         rem.audio[0].pause();
         rem.audio.attr('src', music.url);
-        rem.audio[0].play();
+        attempt.source = rem.audio[0].src;
+        if(!requestAudioPlay(attempt)) return;
     } catch(e) {
-        audioErr(); // 调用错误处理函数
+        audioErr(null, attempt); // 调用错误处理函数
         return;
     }
     
-    rem.errCount = 0;   // 连续播放失败的歌曲数归零
     music_bar.goto(0);  // 进度条强制归零
     changeCover(music);    // 更新封面展示
     ajaxLyric(music, lyricCallback);     // ajax加载歌词

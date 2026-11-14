@@ -17,6 +17,7 @@ error_reporting(error_reporting() & ~E_DEPRECATED);
 class Meting
 {
     const VERSION = '1.5.11';
+    private const NETEASE_DEFAULT_COOKIE = 'appver=8.2.30; os=iPhone OS; osver=15.0; EVNSM=1.0.0; buildver=2206; channel=distribution; machineid=iPhone13.3';
 
     public $raw;
     public $data;
@@ -51,6 +52,19 @@ class Meting
 
     public function cookie($value)
     {
+        if ($this->server === 'netease') {
+            // Keep the client metadata required for playable URLs. Start from
+            // defaults on every call so an earlier account cannot carry over.
+            $cookies = array();
+            foreach (explode(';', self::NETEASE_DEFAULT_COOKIE . ';' . $value) as $item) {
+                $pair = explode('=', trim($item), 2);
+                if (count($pair) !== 2 || trim($pair[0]) === '') continue;
+                $cookies[trim($pair[0])] = trim($pair[1]);
+            }
+            $value = implode('; ', array_map(function ($key, $cookie) {
+                return $key . '=' . $cookie;
+            }, array_keys($cookies), $cookies));
+        }
         $this->header['Cookie'] = $value;
 
         return $this;
@@ -1043,7 +1057,7 @@ class Meting
             case 'netease':
             return array(
                 'Referer'         => 'https://music.163.com/',
-                'Cookie'          => 'appver=8.2.30; os=iPhone OS; osver=15.0; EVNSM=1.0.0; buildver=2206; channel=distribution; machineid=iPhone13.3',
+                'Cookie'          => self::NETEASE_DEFAULT_COOKIE,
                 'User-Agent'      => 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 CloudMusic/0.1.1 NeteaseMusic/8.2.30',
                 'X-Real-IP'       => long2ip(mt_rand(1884815360, 1884890111)),
                 'Accept'          => '*/*',
