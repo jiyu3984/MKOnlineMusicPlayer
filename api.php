@@ -11,11 +11,12 @@
 $netease_cookie = '';
 /************ ↑↑↑↑↑ 如果网易云音乐歌曲获取失效，请将你的 COOKIE 放到这儿 ↑↑↑↑↑ ***************/
 
-/************ ↓↓↓↓↓ 酷狗音乐VIP配置 ↓↓↓↓↓ ***************/
-$kugou_token = '52532e52444eb6c4082cf365dbd9897c1f2a9892d178f349f3392726cf9f2358';  // 酷狗登录token（Cookie中的 t 字段）
-$kugou_userid = '2018440906';    // 酷狗用户ID（Cookie中的 KugooID 字段）
-$kugou_mid = 'ae5ab587322911f3d6cfd08310e89df9';    // 设备ID（Cookie中的 kg_mid 字段）
-$kugou_dfid = '0jKyd0111ReE1w3tGp2dVcyX';           // 设备指纹（Cookie中的 dfid 字段）
+/************ ↓↓↓↓↓ 酷狗音乐VIP配置（直接粘贴Cookie 或 通过admin.php扫码自动获取） ↓↓↓↓↓ ***************/
+$kugou_cookie = '';
+// 如果手动配置为空，自动读取扫码登录保存的Cookie
+if (!$kugou_cookie && file_exists(__DIR__ . '/cache/kugou_cookie.txt')) {
+    $kugou_cookie = trim(file_get_contents(__DIR__ . '/cache/kugou_cookie.txt'));
+}
 /************ ↑↑↑↑↑ 酷狗音乐VIP配置 ↑↑↑↑↑ ***************/
 /**
 * cookie 获取及使用方法见 
@@ -63,8 +64,23 @@ if($source == 'kugou' || $source == 'baidu' || $source == 'tencent') {
 if(($source == 'netease') && $netease_cookie) {
     $API->cookie($netease_cookie);    // 解决网易云 Cookie 失效
 }
-if(($source == 'kugou') && $kugou_token) {
-    $API->kugouVip($kugou_userid, $kugou_token, $kugou_mid, $kugou_dfid);
+if(($source == 'kugou') && $kugou_cookie) {
+    // 从完整Cookie字符串中自动解析所需字段
+    $kugou_params = array();
+    foreach (explode(';', $kugou_cookie) as $item) {
+        $item = trim($item);
+        if ($item && strpos($item, '=') !== false) {
+            list($k, $v) = explode('=', $item, 2);
+            $kugou_params[trim($k)] = trim($v);
+        }
+    }
+    $kugou_token = isset($kugou_params['t']) ? $kugou_params['t'] : '';
+    $kugou_userid = isset($kugou_params['KugooID']) ? $kugou_params['KugooID'] : '0';
+    $kugou_mid = isset($kugou_params['kg_mid']) ? $kugou_params['kg_mid'] : (isset($kugou_params['mid']) ? $kugou_params['mid'] : '');
+    $kugou_dfid = isset($kugou_params['dfid']) ? $kugou_params['dfid'] : (isset($kugou_params['kg_dfid']) ? $kugou_params['kg_dfid'] : '');
+    if ($kugou_token) {
+        $API->kugouVip($kugou_userid, $kugou_token, $kugou_mid, $kugou_dfid);
+    }
 }
 
 // 没有缓存文件夹则创建
