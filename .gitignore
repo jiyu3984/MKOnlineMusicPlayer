@@ -42,3 +42,13 @@ bower_components/
 dist/
 
 .user.ini
+
+# Server-only credentials and runtime state
+/config.local.php
+/cache/*
+!/cache/.gitignore
+/temp/*/
+!/temp/*/.gitignore
+/temp/.download*
+__pycache__/
+*.pyc

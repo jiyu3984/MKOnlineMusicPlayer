@@ -3,7 +3,7 @@ version: '3'
 services:
   webapp:
     container_name: MKOnlineMusicPlayer
-    image: php:7.4-apache
+    image: php:8.5.12-apache
     ports:
       - "4000:80"
     volumes:

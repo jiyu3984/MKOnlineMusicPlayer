@@ -41,7 +41,9 @@ MxuePlay是MKOnlineMusicPlayer的优化版，MKOnlineMusicPlayer 是一款开源
 
 #### 运行环境
 
-php 5.4+, curl_exec, file_get_contents, json_decode, openssl_encrypt
+推荐最新稳定 PHP 安全版本，当前部署使用 PHP 8.5.12；需要 curl、OpenSSL、JSON、Session 和 mbstring 扩展。不要继续部署已经停止安全维护的 PHP 7.4 镜像。
+
+管理密码和音乐平台 Cookie 仅放入服务器的 `config.local.php`，该文件由 Git 忽略；配置格式与部署限制见 [SECURITY.md](SECURITY.md)。仓库提供的 `config.local.example.php` 不含实际凭据。
 
 #### 必要配置
 

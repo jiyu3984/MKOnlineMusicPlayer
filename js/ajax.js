@@ -19,7 +19,7 @@ function ajaxSearch() {
     $.ajax({
         type: mkPlayer.method, 
         url: mkPlayer.api, 
-        data: "types=search&count=" + mkPlayer.loadcount + "&source=" + rem.source + "&pages=" + rem.loadPage + "&name=" + rem.wd,
+        data: { types: 'search', count: mkPlayer.loadcount, source: rem.source, pages: rem.loadPage, name: rem.wd },
         dataType: mkPlayer.dataType,
         complete: function(XMLHttpRequest, textStatus) {
             if(tmpLoading) layer.close(tmpLoading);    // 关闭加载中动画
@@ -97,7 +97,9 @@ function ajaxSearch() {
 function ajaxUrl(music, callback)
 {
     // 已经有数据，直接回调
-    if(music.url !== null && music.url !== "err" && music.url !== "") {
+    var cachedUrl = music.url !== 'err' ? safeMediaUrl(music.url) : '';
+    if(cachedUrl) {
+        music.url = cachedUrl;
         callback(music);
         return true;
     }
@@ -112,9 +114,10 @@ function ajaxUrl(music, callback)
     $.ajax({ 
         type: mkPlayer.method, 
         url: mkPlayer.api,
-        data: "types=url&id=" + music.id + "&source=" + music.source + (music.url_id ? "&url_id=" + music.url_id : ""),
+        data: { types: 'url', id: music.id, source: music.source, url_id: music.url_id || '' },
         dataType: mkPlayer.dataType,
         success: function(jsonData){
+            jsonData.url = typeof jsonData.url === 'string' ? jsonData.url : '';
             // 调试信息输出
             if(mkPlayer.debug) {
                 console.debug("歌曲链接：" + jsonData.url);
@@ -123,7 +126,7 @@ function ajaxUrl(music, callback)
             // 解决网易云音乐部分歌曲无法播放问题
             if(music.source == "netease") {
                 if(jsonData.url === "") {
-                    jsonData.url = "https://music.163.com/song/media/outer/url?id=" + music.id + ".mp3";
+                    jsonData.url = "https://music.163.com/song/media/outer/url?id=" + encodeURIComponent(music.id) + ".mp3";
                 } else {
                     jsonData.url = jsonData.url.replace(/m7c.music./g, "m7.music.");
                     jsonData.url = jsonData.url.replace(/m8c.music./g, "m8.music.");
@@ -132,10 +135,11 @@ function ajaxUrl(music, callback)
                 jsonData.url = jsonData.url.replace(/http:\/\/zhangmenshiting.qianqian.com/g, "https://gss0.bdstatic.com/y0s1hSulBw92lNKgpU_Z2jR7b2w6buu");
             }
             
-            if(jsonData.url === "") {
+            var mediaUrl = safeMediaUrl(jsonData.url);
+            if(!mediaUrl) {
                 music.url = "err";
             } else {
-                music.url = jsonData.url;    // 记录结果
+                music.url = mediaUrl;    // 记录结果
             }
             
             updateMinfo(music); // 更新音乐信息
@@ -156,7 +160,9 @@ function ajaxUrl(music, callback)
 function ajaxPic(music, callback)
 {
     // 已经有数据，直接回调
-    if(music.pic !== null && music.pic !== "err" && music.pic !== "") {
+    var cachedPic = music.pic !== 'err' ? safeMediaUrl(music.pic) : '';
+    if(cachedPic) {
+        music.pic = cachedPic;
         callback(music);
         return true;
     }
@@ -171,7 +177,7 @@ function ajaxPic(music, callback)
     $.ajax({ 
         type: mkPlayer.method, 
         url: mkPlayer.api,
-        data: "types=pic&id=" + music.pic_id + "&source=" + music.source,
+        data: { types: 'pic', id: music.pic_id, source: music.source },
         dataType: mkPlayer.dataType,
         success: function(jsonData){
             // 调试信息输出
@@ -179,8 +185,9 @@ function ajaxPic(music, callback)
                 console.log("歌曲封面：" + jsonData.url);
             }
             
-            if(jsonData.url !== "") {
-                music.pic = jsonData.url;    // 记录结果
+            var pictureUrl = safeMediaUrl(jsonData.url);
+            if(pictureUrl) {
+                music.pic = pictureUrl;    // 记录结果
             } else {
                 music.pic = "err";
             }
@@ -213,7 +220,7 @@ function ajaxPlayList(lid, id, callback) {
     $.ajax({
         type: mkPlayer.method, 
         url: mkPlayer.api, 
-        data: "types=playlist&id=" + lid,
+        data: { types: 'playlist', id: lid },
         dataType: mkPlayer.dataType,
         complete: function(XMLHttpRequest, textStatus) {
             musicList[id].isloading = false;    // 列表已经加载完了
@@ -223,19 +230,19 @@ function ajaxPlayList(lid, id, callback) {
             var tempList = {
                 id: lid,    // 列表的网易云 id
                 name: musicList[id].name || jsonData.playlist.name,   // 优先使用自定义名字
-                cover: jsonData.playlist.coverImgUrl,   // 列表封面
+                cover: safeMediaUrl(jsonData.playlist.coverImgUrl, 'images/player_cover.png'),   // 列表封面
                 creatorName: jsonData.playlist.creator.nickname,   // 列表创建者名字
-                creatorAvatar: jsonData.playlist.creator.avatarUrl,   // 列表创建者头像
+                creatorAvatar: safeMediaUrl(jsonData.playlist.creator.avatarUrl, 'images/avatar.png'),   // 列表创建者头像
                 item: []
             };
             
             if(jsonData.playlist.coverImgUrl !== '') {
-                tempList.cover = jsonData.playlist.coverImgUrl + "?param=200y200";
+                tempList.cover = safeMediaUrl(jsonData.playlist.coverImgUrl + "?param=200y200", 'images/player_cover.png');
             } else {
-                tempList.cover = musicList[id].cover;
+                tempList.cover = safeMediaUrl(musicList[id].cover, 'images/player_cover.png');
             }
             
-            if(typeof jsonData.playlist.tracks !== undefined || jsonData.playlist.tracks.length !== 0) {
+            if(Array.isArray(jsonData.playlist.tracks)) {
                 // 存储歌单中的音乐信息
                 for (var i = 0; i < jsonData.playlist.tracks.length; i++) {
                     tempList.item[i] =  {
@@ -247,7 +254,7 @@ function ajaxPlayList(lid, id, callback) {
                         url_id: jsonData.playlist.tracks[i].id,  // 链接ID
                         pic_id: null,  // 封面ID
                         lyric_id: jsonData.playlist.tracks[i].id,  // 歌词ID
-                        pic: jsonData.playlist.tracks[i].al.picUrl + "?param=300y300",    // 专辑图片
+                        pic: safeMediaUrl(jsonData.playlist.tracks[i].al.picUrl + "?param=300y300", 'images/player_cover.png'),    // 专辑图片
                         url: null   // mp3链接
                     };
                 }
@@ -279,7 +286,7 @@ function ajaxPlayList(lid, id, callback) {
             
             // 改变前端列表
             $(".sheet-item[data-no='" + id + "'] .sheet-cover").attr('src', tempList.cover);    // 专辑封面
-            $(".sheet-item[data-no='" + id + "'] .sheet-name").html(tempList.name);     // 专辑名字
+            $(".sheet-item[data-no='" + id + "'] .sheet-name").text(tempList.name);     // 专辑名字
             
             // 调试信息输出
             if(mkPlayer.debug) {
@@ -304,7 +311,7 @@ function ajaxLyric(music, callback) {
     $.ajax({
         type: mkPlayer.method,
         url: mkPlayer.api,
-        data: "types=lyric&id=" + music.lyric_id + "&source=" + music.source,
+        data: { types: 'lyric', id: music.lyric_id, source: music.source },
         dataType: mkPlayer.dataType,
         success: function(jsonData){
             // 调试信息输出
@@ -335,7 +342,7 @@ function ajaxUserList(uid)
     $.ajax({
         type: mkPlayer.method,
         url: mkPlayer.api,
-        data: "types=userlist&uid=" + uid,
+        data: { types: 'userlist', uid: uid },
         dataType: mkPlayer.dataType,
         complete: function(XMLHttpRequest, textStatus) {
             if(tmpLoading) layer.close(tmpLoading);    // 关闭加载中动画
@@ -348,14 +355,14 @@ function ajaxUserList(uid)
             
             if(jsonData.playlist.length === 0 || typeof(jsonData.playlist.length) === "undefined")
             {
-                layer.msg('没找到用户 ' + uid + ' 的歌单', {anim:6});
+                layer.msg('没找到用户 ' + escapeHtml(uid) + ' 的歌单', {anim:6});
                 return false;
             }else{
                 var tempList,userList = [];
                 $("#sheet-bar").remove();   // 移除登陆条
                 rem.uid = uid;  // 记录已同步用户 uid
                 rem.uname = jsonData.playlist[0].creator.nickname;  // 第一个列表(喜欢列表)的创建者即用户昵称
-                layer.msg('欢迎您 '+rem.uname);
+                layer.msg('欢迎您 ' + escapeHtml(rem.uname));
                 // 记录登录用户
                 playerSavedata('uid', rem.uid);
                 playerSavedata('uname', rem.uname);
@@ -366,10 +373,10 @@ function ajaxUserList(uid)
                     tempList = {
                         id: jsonData.playlist[i].id,    // 列表的网易云 id
                         name: jsonData.playlist[i].name,   // 列表名字
-                        cover: jsonData.playlist[i].coverImgUrl  + "?param=200y200",   // 列表封面
+                        cover: safeMediaUrl(jsonData.playlist[i].coverImgUrl  + "?param=200y200", 'images/player_cover.png'),   // 列表封面
                         creatorID: uid,   // 列表创建者id
                         creatorName: jsonData.playlist[i].creator.nickname,   // 列表创建者名字
-                        creatorAvatar: jsonData.playlist[i].creator.avatarUrl,   // 列表创建者头像
+                        creatorAvatar: safeMediaUrl(jsonData.playlist[i].creator.avatarUrl, 'images/avatar.png'),   // 列表创建者头像
                         item: []
                     };
                     // 存储并显示播放列表

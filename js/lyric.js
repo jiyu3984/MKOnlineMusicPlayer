@@ -16,7 +16,7 @@ var maxBlur = isMobile ? 2 : 2;  // 安卓2，PC模糊减半为2
 
 // 显示提示语（如歌词加载中、无歌词等）
 function lyricTip(str) {
-    lyricArea.html("<li class='lyric-tip'>" + str + "</li>");
+    lyricArea.html("<li class='lyric-tip'>" + escapeHtml(str) + "</li>");
 }
 
 // 歌曲加载完后的回调函数
@@ -37,13 +37,13 @@ function lyricCallback(str, id, tstr) {
 
     var i = 0;
     for (var k in rem.lyric) {
-        var txt = rem.lyric[k];
+        var txt = escapeHtml(rem.lyric[k]);
         if (!txt) txt = "&nbsp;";
         var li;
         if (!rem.tlyric[k] || rem.tlyric[k] === '') {
             li = $("<li data-no='" + i + "' class='lrc-item'><div class='lyric-wrapper'><span class='shell'>" + txt + "</span></div></li>");
         } else {
-            li = $("<li data-no='" + i + "' class='lrc-item'><div class='lyric-wrapper'><span class='shell'>" + txt + "<br><span class='trans-lyric'>" + rem.tlyric[k] + "</span></span></div></li>");
+            li = $("<li data-no='" + i + "' class='lrc-item'><div class='lyric-wrapper'><span class='shell'>" + txt + "<br><span class='trans-lyric'>" + escapeHtml(rem.tlyric[k]) + "</span></span></div></li>");
         }
         lyricArea.append(li);
         i++;
@@ -149,7 +149,8 @@ function parseLyric(lrc) {
     var lyrics = lrc.split("\n");
     var lrcObj = {};
     for (var i = 0; i < lyrics.length; i++) {
-        var lyric = decodeURIComponent(lyrics[i]);
+        var lyric = lyrics[i];
+        try { lyric = decodeURIComponent(lyric); } catch(error) {}
         var timeReg = /\[\d*:\d*((\.|\:)\d*)*\]/g;
         var timeRegExpArr = lyric.match(timeReg);
         if (!timeRegExpArr) continue;

@@ -4,6 +4,25 @@
  * 编写：mengkun(https://mkblog.cn)
  * 时间：2018-3-11
  *************************************************/
+// Provider metadata is text, including when rendered inside player dialogs.
+function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character];
+    });
+}
+
+// Media and artwork may come from an upstream API or saved browser history.
+function safeMediaUrl(value, fallback) {
+    if(typeof value !== 'string' || !value.trim() || /[\u0000-\u001f\u007f]/.test(value)) return fallback || '';
+    try {
+        var parsed = new URL(value, window.location.href);
+        if((parsed.protocol === 'https:' || parsed.protocol === 'http:') && !parsed.username && !parsed.password) {
+            return parsed.href;
+        }
+    } catch(error) {}
+    return fallback || '';
+}
+
 // 判断是否是移动设备
 var isMobile = {  
     Android: function() {  
@@ -336,19 +355,19 @@ function getAudioTime () {
 // 展现系统列表中任意首歌的歌曲信息
 function musicInfo(list, index) {
     var music = musicList[list].item[index];
-    var tempStr = '<span class="info-title">歌名：</span>' + music.name + 
-    '<br><span class="info-title">歌手：</span>' + music.artist + 
-    '<br><span class="info-title">专辑：</span>' + music.album;
+    var tempStr = '<span class="info-title">歌名：</span>' + escapeHtml(music.name) +
+    '<br><span class="info-title">歌手：</span>' + escapeHtml(music.artist) +
+    '<br><span class="info-title">专辑：</span>' + escapeHtml(music.album);
     
     if(list == rem.playlist && index == rem.playid) {   // 当前正在播放这首歌，那么还可以顺便获取一下时长。。
         tempStr += '<br><span class="info-title">时长：</span>' + formatTime(rem.audio[0].duration);
     }
     
     tempStr += '<br><span class="info-title">操作：</span>' + 
-    '<span class="info-btn" onclick="thisDownload(this)" data-list="' + list + '" data-index="' + index + '">下载</span>' + 
-    '<span style="margin-left: 10px" class="info-btn" onclick="thisDownloadLrc(this)" data-list="' + list + '" data-index="' + index + '">下载歌词</span>' + 
-    '<span style="margin-left: 10px" class="info-btn" onclick="thisDownloadPic(this)" data-list="' + list + '" data-index="' + index + '">下载封面</span>' + 
-    '<span style="margin-left: 10px" class="info-btn" onclick="thisShare(this)" data-list="' + list + '" data-index="' + index + '">外链</span>';
+    '<span class="info-btn" onclick="thisDownload(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">下载</span>' +
+    '<span style="margin-left: 10px" class="info-btn" onclick="thisDownloadLrc(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">下载歌词</span>' +
+    '<span style="margin-left: 10px" class="info-btn" onclick="thisDownloadPic(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">下载封面</span>' +
+    '<span style="margin-left: 10px" class="info-btn" onclick="thisShare(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">外链</span>';
     
     layer.open({
         type: 0,
@@ -427,7 +446,7 @@ function comments(obj) {
     $.ajax({
         type: mkPlayer.method, 
         url: mkPlayer.api, 
-        data: "types=comments&id=" + obj.id + "&source=" + obj.source,
+        data: { types: 'comments', id: obj.id, source: obj.source },
         dataType: mkPlayer.dataType,
         success: function(jsonData){
             if (jsonData.hot_comment && jsonData.hot_comment.length) {
@@ -439,17 +458,18 @@ function comments(obj) {
                 return;
             }
             if (obj.source === 'netease') {
-                $(".banner_text a").attr("href", "https://music.163.com/#/song?id="+obj.id+"#comment-box");
+                $(".banner_text a").attr("href", "https://music.163.com/#/song?id="+encodeURIComponent(obj.id)+"#comment-box");
             } else if (obj.source === 'kugou') {
-                $(".banner_text a").attr("href", "https://www.kugou.com/song/#hash="+obj.id);
+                $(".banner_text a").attr("href", "https://www.kugou.com/song/#hash="+encodeURIComponent(obj.id));
             } else if (obj.source === 'tencent') {
-                $(".banner_text a").attr("href", "https://y.qq.com/n/yqq/song/"+obj.id+".html#comment_box");
+                $(".banner_text a").attr("href", "https://y.qq.com/n/yqq/song/"+encodeURIComponent(obj.id)+".html#comment_box");
             } else if (obj.source === 'xiami') {
-                $(".banner_text a").attr("href", "https://www.xiami.com/song/"+obj.id+"#comments");
+                $(".banner_text a").attr("href", "https://www.xiami.com/song/"+encodeURIComponent(obj.id)+"#comments");
             } else if (obj.source === 'baidu') {
             
             }
             $(".banner_text a").attr("target", "_blank");
+            $(".banner_text a").attr("rel", "noopener noreferrer");
             var avatarDom = new Image();
             (function nextComment (commentsIndex) {
                 if (commentsIndex === undefined || commentsIndex === rem.comments.length-1) {
@@ -458,7 +478,8 @@ function comments(obj) {
                     commentsIndex++;
                 }
 
-                var avatarSrc = (rem.comments[commentsIndex].user.avatar ? rem.comments[commentsIndex].user.avatar : "images/avatar.png") + '?t=' + Math.random();
+                var avatarSrc = safeMediaUrl(rem.comments[commentsIndex].user.avatar, 'images/avatar.png');
+                avatarSrc += (avatarSrc.indexOf('?') === -1 ? '?' : '&') + 't=' + Math.random();
                 avatarDom.src = avatarSrc;
                 avatarDom.onload = function () {
                     $(".banner_text span").text(rem.comments[commentsIndex].content);
@@ -482,19 +503,21 @@ function thisDownloadPic (obj) {
     var music = musicList[$(obj).data("list")].item[$(obj).data("index")];
     layer.closeAll();
     if (music.pic) {
-        open(music.pic.split('?')[0].split('@')[0]);
+        var coverUrl = safeMediaUrl(music.pic);
+        if(coverUrl) window.open(coverUrl.split('?')[0].split('@')[0], '_blank', 'noopener,noreferrer');
     } else {
         $.ajax({ 
             type: mkPlayer.method, 
             url: mkPlayer.api,
-            data: "types=pic&id=" + music.pic_id + "&source=" + music.source,
+            data: { types: 'pic', id: music.pic_id, source: music.source },
             dataType: mkPlayer.dataType,
             success: function(jsonData){
                 if(mkPlayer.debug) {
                     console.log("歌曲封面：" + jsonData.url);
                 }
-                if (jsonData.url) {
-                    open(jsonData.url.split('?')[0].split('@')[0]);
+                var coverUrl = safeMediaUrl(jsonData.url);
+                if (coverUrl) {
+                    window.open(coverUrl.split('?')[0].split('@')[0], '_blank', 'noopener,noreferrer');
                 } else {
                     layer.msg('没有封面');
                 }
@@ -514,7 +537,7 @@ function thisDownloadLrc (obj) {
     $.ajax({
         type: mkPlayer.method,
         url: mkPlayer.api,
-        data: "types=lyric&id=" + music.lyric_id + "&source=" + music.source,
+        data: { types: 'lyric', id: music.lyric_id, source: music.source },
         dataType: mkPlayer.dataType,
         success: function(jsonData){
             // 调试信息输出
@@ -556,7 +579,8 @@ function thisShare(obj) {
 // 下载歌曲
 // 参数：包含歌曲信息的数组
 function download(music) {
-    if(music.url == 'err' || music.url == "" || music.url == null) {
+    var mediaUrl = safeMediaUrl(music.url);
+    if(music.url == 'err' || !mediaUrl) {
         layer.msg('这首歌不支持下载');
         return;
     }
@@ -574,21 +598,26 @@ function download(music) {
     $.ajax({ 
         type: mkPlayer.method,
         url: mkPlayer.api,
-        data: 'types=download&artist=' + music.artist + '&name=' + music.name + '&source=' + music.source + '&url=' + encodeURIComponent(music.url),
+        data: { types: 'download', artist: music.artist, name: music.name, source: music.source, url: mediaUrl },
         dataType: 'json',
         timeout: 10000,
         success: function(jsonData){
             layer.closeAll();
             clearInterval(loading);
-            if (jsonData.code == 1) {
+            var downloadUrl = safeMediaUrl(jsonData.url);
+            if(downloadUrl) {
+                var parsedDownload = new URL(downloadUrl);
+                if(parsedDownload.origin !== window.location.origin || parsedDownload.pathname.indexOf('/temp/') !== 0) downloadUrl = '';
+            }
+            if (jsonData.code == 1 && downloadUrl) {
                 if ($('.download').length) {
                     $('.download').remove();
                 }
                 var downDom = $('<iframe class="download" style="height: 0;width: 0;display: none;"></iframe>');
-                downDom[0].src = jsonData.url;
+                downDom[0].src = downloadUrl;
                 $('body').append(downDom);
             } else {
-                layer.msg(jsonData.msg);
+                layer.msg(escapeHtml(jsonData.msg || '下载失败'));
             }
         },
         error: function(XMLHttpRequest, textStatus, errorThrown) {
@@ -601,13 +630,14 @@ function download(music) {
 // 获取外链的ajax回调函数
 // 参数：包含音乐信息的数组
 function ajaxShare(music) {
-    if(music.url == 'err' || music.url == "" || music.url == null) {
+    var mediaUrl = safeMediaUrl(music.url);
+    if(music.url == 'err' || !mediaUrl) {
         layer.msg('这首歌不支持外链获取');
         return;
     }
     
-    var tmpHtml = '<p>' + music.artist + ' - ' + music.name + ' 的外链地址为：</p>' + 
-    '<input class="share-url" onmouseover="this.focus();this.select()" value="' + music.url + '">' + 
+    var tmpHtml = '<p>' + escapeHtml(music.artist) + ' - ' + escapeHtml(music.name) + ' 的外链地址为：</p>' +
+    '<input class="share-url" onmouseover="this.focus();this.select()" value="' + escapeHtml(mediaUrl) + '">' +
     '<p class="share-tips">* 获取到的音乐外链有效期较短，请按需使用。</p>';
     
     layer.open({
@@ -626,16 +656,17 @@ function changeCover(music) {
     
     if(!img) {  // 封面为空
         ajaxPic(music, changeCover);    // 获取歌曲封面图
-        img == "err";    // 暂时用无图像占个位...
+        img = "err";    // 暂时用无图像占个位...
     }
     
     if(img == "err") {
         img = "images/player_cover.png";
     } else {
+        img = safeMediaUrl(img, 'images/player_cover.png');
         if(mkPlayer.mcoverbg === true && rem.isMobile)      // 移动端封面
         {    
             $("#music-cover").load(function(){
-                $("#mobile-blur").css('background-image', 'url("' + img + '")');
+                $("#mobile-blur").css('background-image', 'url("' + img.replace(/["\\\n\r\f]/g, encodeURIComponent) + '")');
             });
         } 
         else if(mkPlayer.coverbg === true && !rem.isMobile)     // PC端封面
@@ -752,11 +783,11 @@ function addListhead() {
 // 参数：编号、名字、歌手、专辑
 function addItem(no, name, auth, album) {
     var html = '<div class="list-item" data-no="' + (no - 1) + '">' +
-    '    <span class="list-num">' + no + '</span>' +
+    '    <span class="list-num">' + escapeHtml(no) + '</span>' +
     '    <span class="list-mobile-menu"></span>' +
-    '    <span class="music-album">' + album + '</span>' +
-    '    <span class="auth-name">' + auth + '</span>' +
-    '    <span class="music-name">' + name + '</span>' +
+    '    <span class="music-album">' + escapeHtml(album) + '</span>' +
+    '    <span class="auth-name">' + escapeHtml(auth) + '</span>' +
+    '    <span class="music-name">' + escapeHtml(name) + '</span>' +
     '</div>'; 
     rem.mainList.append(html);
 }
@@ -857,12 +888,12 @@ function refreshList() {
 // 添加一个歌单
 // 参数：编号、歌单名字、歌单封面
 function addSheet(no, name, cover) {
-    if(!cover) cover = "images/player_cover.png";
+    cover = safeMediaUrl(cover, 'images/player_cover.png');
     if(!name) name = "读取中...";
     
-    var html = '<div class="sheet-item" data-no="' + no + '">' +
-    '    <img class="sheet-cover" src="' +cover+ '">' +
-    '    <p class="sheet-name">' +name+ '</p>' +
+    var html = '<div class="sheet-item" data-no="' + escapeHtml(no) + '">' +
+    '    <img class="sheet-cover" src="' + escapeHtml(cover) + '">' +
+    '    <p class="sheet-name">' + escapeHtml(name) + '</p>' +
     '</div>'; 
     rem.sheetList.append(html);
 }
@@ -875,7 +906,7 @@ function clearSheet() {
 function sheetBar() {
     var barHtml;
     if(playerReaddata('uid')) {
-        barHtml = '已同步 ' + rem.uname + ' 的歌单 <span class="login-btn login-refresh">[刷新]</span> <span class="login-btn login-out">[退出]</span>';
+        barHtml = '已同步 ' + escapeHtml(rem.uname) + ' 的歌单 <span class="login-btn login-refresh">[刷新]</span> <span class="login-btn login-out">[退出]</span>';
     } else {
         barHtml = '我的歌单 <span class="login-btn login-in">[点击同步]</span>';
     }

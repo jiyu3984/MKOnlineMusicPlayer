@@ -7,17 +7,14 @@
  * 特别感谢 @metowolf 提供的 Meting.php
  *************************************************/
 
-/************ ↓↓↓↓↓ 如果网易云音乐歌曲获取失效，请将你的 COOKIE 放到这儿 ↓↓↓↓↓ ***************/
-$netease_cookie = '';
-/************ ↑↑↑↑↑ 如果网易云音乐歌曲获取失效，请将你的 COOKIE 放到这儿 ↑↑↑↑↑ ***************/
-
-/************ ↓↓↓↓↓ 酷狗音乐VIP配置（直接粘贴Cookie 或 通过admin.php扫码自动获取） ↓↓↓↓↓ ***************/
-$kugou_cookie = '';
-// 如果手动配置为空，自动读取扫码登录保存的Cookie
-if (!$kugou_cookie && file_exists(__DIR__ . '/cache/kugou_cookie.txt')) {
+// Credentials belong in an ignored server-local configuration, never in source control.
+require_once __DIR__ . '/plugns/Security.php';
+$runtime = \Mxue\Security::runtimeConfig();
+$netease_cookie = getenv('MUSIC_NETEASE_COOKIE') ?: ($runtime['netease_cookie'] ?? '');
+$kugou_cookie = getenv('MUSIC_KUGOU_COOKIE') ?: ($runtime['kugou_cookie'] ?? '');
+if (!$kugou_cookie && is_file(__DIR__ . '/cache/kugou_cookie.txt')) {
     $kugou_cookie = trim(file_get_contents(__DIR__ . '/cache/kugou_cookie.txt'));
 }
-/************ ↑↑↑↑↑ 酷狗音乐VIP配置 ↑↑↑↑↑ ***************/
 /**
 * cookie 获取及使用方法见 
 * https://github.com/mengkunsoft/MKOnlineMusicPlayer/wiki/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E9%97%AE%E9%A2%98
@@ -33,7 +30,7 @@ if (!$kugou_cookie && file_exists(__DIR__ . '/cache/kugou_cookie.txt')) {
 define('HTTPS', true);    // 如果您的网站启用了https，请将此项置为“true”，如果你的网站未启用 https，建议将此项设置为“false”
 define('DEBUG', false);      // 是否开启调试模式，正常使用时请将此项置为“false”
 define('JSONP', false);      // 是否开启JSONP模式，使用远程api时请开启
-define('CACHE_PATH', 'cache/');     // 文件缓存目录,请确保该目录存在且有读写权限。如无需缓存，可将此行注释掉
+define('CACHE_PATH', __DIR__ . '/cache/');     // 文件缓存目录,请确保该目录存在且有读写权限。如无需缓存，可将此行注释掉
 
 /*
  如果遇到程序不能正常运行，请开启调试模式，然后访问 http://你的网站/音乐播放器地址/api.php ，进入服务器运行环境检测。
@@ -45,8 +42,9 @@ define('CACHE_PATH', 'cache/');     // 文件缓存目录,请确保该目录存�
 /*****************************************************************************************************/
 if(!defined('DEBUG') || DEBUG !== true) error_reporting(0); // 屏蔽服务器错误
 
-require_once('plugns/Meting.php');
-require_once('plugns/Download.php');
+require_once __DIR__ . '/plugns/Meting.php';
+require_once __DIR__ . '/plugns/Download.php';
+\Mxue\Security::validateApiRequest();
 
 use Metowolf\Meting;
 use Mxue\Download;
@@ -138,7 +136,7 @@ switch($types)   // 根据请求的 Api，执行相应操作
             if(file_exists($cache)) {   // 缓存存在，则读取缓存
                 $data = file_get_contents($cache);
             } else {
-                $url= 'http://music.163.com/api/user/playlist/?offset=0&limit=1001&uid='.$uid;
+                $url= 'https://music.163.com/api/user/playlist/?offset=0&limit=1001&uid='.rawurlencode($uid);
                 $data = file_get_contents($url);
 
                 // 只缓存链接获取成功的用户列表
@@ -147,7 +145,7 @@ switch($types)   // 根据请求的 Api，执行相应操作
                 }
             }
         } else {
-            $url= 'http://music.163.com/api/user/playlist/?offset=0&limit=1001&uid='.$uid;
+            $url= 'https://music.163.com/api/user/playlist/?offset=0&limit=1001&uid='.rawurlencode($uid);
             $data = file_get_contents($url);
         }
         
@@ -249,44 +247,6 @@ switch($types)   // 根据请求的 Api，执行相应操作
         echojson($data);
         break;
     
-    case 'cache':
-        $minute = getParam('minute', 30);   // 删除几分钟之前的文件
-
-        date_default_timezone_set('Asia/Shanghai'); // 如果时区不同请自行设置时区
-
-        $list = scandir(CACHE_PATH);
-        $jsonList = array();
-
-        foreach ($list as $val) {
-            $filePath = CACHE_PATH.$val;
-            if (is_file($filePath) && pathinfo($filePath, PATHINFO_EXTENSION) === 'json') {
-                array_push($jsonList, $filePath);
-            }
-        }
-
-        $data = array();
-        foreach($jsonList as $val) {
-            if (strtotime('+'.$minute.' minute', filemtime($val)) <= time()) {
-                $filetime = date('Y-m-d H:i:s', filemtime($val));
-                if (unlink($val)) {
-                    array_push($data, array(
-                        'msg' => '删除成功。',
-                        'time' => $filetime,
-                        'file' => $val,
-                    )); 
-                } else {
-                    array_push($data, array(
-                        'msg' => '删除失败，请检查文件权限或其他问题。',
-                        'time' => $filetime,
-                        'file' => $val,
-                    ));
-                }
-            }
-        }
-
-        echojson(json_encode($data));
-        break;
-
     default:
         echo '<!doctype html><html><head><meta charset="utf-8"><title>信息</title><style>* {font-family: microsoft yahei}</style></head><body> <h2>MKOnlinePlayer</h2><h3>Github: https://github.com/mengkunsoft/MKOnlineMusicPlayer</h3><br>';
         if(!defined('DEBUG') || DEBUG !== true) {   // 非调试模式
@@ -341,7 +301,7 @@ function checkfunc($f,$m = false) {
  */
 function getParam($key, $default='')
 {
-    return trim($key && is_string($key) ? (isset($_POST[$key]) ? $_POST[$key] : (isset($_GET[$key]) ? $_GET[$key] : $default)) : $default);
+    return \Mxue\Security::requestParam($key, $default);
 }
 
 /**
@@ -360,7 +320,9 @@ function echojson($data)    //json和jsonp通用
     
     if(defined('JSONP') && JSONP === true && $callback) //输出jsonp格式
     {
-        die(htmlspecialchars($callback).'('.$data.')');
+        if (!preg_match('/\A[A-Za-z_$][A-Za-z0-9_$.]{0,127}\z/D', $callback)) \Mxue\Security::badRequest('回调参数有误');
+        header('Content-Type: application/javascript; charset=utf-8');
+        die($callback.'('.$data.')');
     } else {
         die($data);
     }
