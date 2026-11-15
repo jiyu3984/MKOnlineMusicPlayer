@@ -2,13 +2,29 @@
 .btn[data-action="player"] { display: inline-block; background: transparent; }
 .cover { padding: 0; border: 0; background: transparent; }
 .cover:focus-visible, .player-close:focus-visible, .now-playing-cover:focus-visible,
-.btn:focus-visible, #music-info:focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
+.btn:focus-visible, #music-info:focus-visible, .player-view-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
 .player-layout { height: 100%; }
 .player-heading, .player-close, .tonearm, .turntable-label { display: none; }
 #music-info { border: 0; }
 .now-playing-cover { display: none; }
+.player-view-toggle { display: none; }
 
 @media (min-width: 901px) {
+    .btn[data-action="player"] { display: none; }
+    #music-info { right: 140px; bottom: 12px; }
+    .player-view-toggle {
+        position: absolute; right: 10px; bottom: 12px; z-index: 3;
+        display: flex; align-items: center; justify-content: center; gap: 7px;
+        width: 118px; height: 28px; padding: 0; border: 1px solid rgba(255,255,255,.2);
+        border-radius: 15px; background: rgba(30,34,38,.7); color: #d5dadd; font-size: 13px;
+    }
+    .player-view-toggle::before {
+        content: ""; width: 16px; height: 16px; background: currentColor;
+        clip-path: polygon(15% 65%, 50% 30%, 85% 65%, 77% 73%, 50% 46%, 23% 73%);
+    }
+    .player-view-toggle:hover { color: #fff; border-color: rgba(255,255,255,.5); }
+    .player-view-open .player-view-toggle { right: 24px; }
+    .player-view-open .player-view-toggle::before { transform: rotate(180deg); }
     .btn-bar { right: 400px; }
     .btn-box { white-space: nowrap; }
     .btn { padding: 6px 19px; }
@@ -134,7 +150,7 @@
     .player-view-open #lyric .shell.lplaying { color: #a3efd3; font-weight: 600; transform: none; text-shadow: none; padding: 6px 0; }
     .player-view-open .trans-lyric { color: #aeb6bc; font-size: 16px; }
     .player-view-open #lyric .trans-lyric.lplaying { color: #d0f8e8; transform: none; text-shadow: none; padding: 0; }
-    .player-view-open #music-info { right: 24px; bottom: 12px; opacity: .55; }
+    .player-view-open #music-info { right: 154px; bottom: 12px; opacity: .55; }
     .player-view-open .footer { position: fixed; height: 90px; bottom: 0; background: #191c20; border: 0; }
     .player-view-open .footer > .container { max-width: none; }
     .player-view-open .now-playing-cover { display: none; }

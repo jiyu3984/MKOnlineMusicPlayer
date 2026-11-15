@@ -49,7 +49,7 @@
     <!-- 小屏幕样式修复 -->
     <link rel="stylesheet" type="text/css" href="css/small.css">
 
-    <link rel="stylesheet" href="css/player-view.css?v=20261115-pc-player">
+    <link rel="stylesheet" href="css/player-view.css?v=20261115-player-actions">
 
     <!-- 自定义css样式 -->
     <style>
@@ -127,6 +127,7 @@
                 </div>
             </div>
             <button type="button" id="music-info" aria-label="查看歌曲信息" title="点击查看歌曲信息"></button>
+            <button type="button" class="player-view-toggle" id="player-view-toggle" aria-controls="player" aria-expanded="false" aria-label="播放器" title="播放器">播放器</button>
         </section>
     </div>  <!--class="container"-->
 </div>  <!--class="center"-->
@@ -169,19 +170,19 @@
 <script src="plugns/layui/layui.js"></script>
 
 <!-- 播放器主体功能模块 -->
-<script src="js/player.js?v=20261115-pc-player"></script>
+<script src="js/player.js?v=20261115-player-actions"></script>
 
 <!-- 播放器数据加载模块 -->
 <script src="js/ajax.js?v=20261114-security"></script>
 
 <!-- 播放器歌词解析模块 -->
-<script src="js/lyric.js?v=20261115-pc-player"></script>
+<script src="js/lyric.js?v=20261115-player-actions"></script>
 
 <!-- 音乐列表配置 -->
 <script src="js/musicList.js"></script>
 
 <!-- 封装函数及ui交互模块 -->
-<script src="js/functions.js?v=20261115-pc-player"></script>
+<script src="js/functions.js?v=20261115-player-actions"></script>
 
 <!-- 滚动条美化插件 -->
 <script src="js/jquery.mCustomScrollbar.concat.min.js"></script>

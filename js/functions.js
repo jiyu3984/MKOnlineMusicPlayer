@@ -129,6 +129,11 @@ $(function(){
     $('#player-cover-button,#now-playing-cover').on('click', function() {
         dataBox('player', this);
     });
+    $('#player-view-toggle').on('click', function() {
+        if(document.documentElement.clientWidth <= 900) return;
+        if(rem.dataView === 'player') closePlayerView();
+        else dataBox('player', this);
+    });
     $('#player-close').on('click', closePlayerView);
     document.addEventListener('keydown', function(event) {
         if(event.key === 'Escape' && rem.dataView === 'player' &&
@@ -963,7 +968,7 @@ function closePlayerView() {
     var returnFocus = rem.playerReturnFocus;
     dataBox(rem.previousDataView === 'sheet' ? 'sheet' : 'list');
     rem.playerReturnFocus = null;
-    if(!focusPlayerElement(returnFocus)) {
+    if(!focusPlayerElement(returnFocus) && !focusPlayerElement(document.getElementById('player-view-toggle'))) {
         focusPlayerElement(document.getElementById('now-playing-cover'));
     }
 }
@@ -983,7 +988,9 @@ function renderDataBox() {
     $('#player').stop(true, true).toggle(playerOpen || !smallScreen);
     $('#main-list').stop(true, true).toggle(choose === 'list');
     $('#sheet').stop(true, true).toggle(choose === 'sheet');
-    $('.btn[data-action="player"],#now-playing-cover,#player-cover-button').attr('aria-expanded', String(playerOpen));
+    $('.btn[data-action="player"],#now-playing-cover,#player-cover-button,#player-view-toggle').attr('aria-expanded', String(playerOpen));
+    var toggleLabel = playerOpen ? '收起播放器' : '播放器';
+    $('#player-view-toggle').text(toggleLabel).attr({ 'aria-label': toggleLabel, title: toggleLabel });
     $('.btn-box .active').removeClass('active');
     switch(choose) {
         case "list":    // 显示播放列表
