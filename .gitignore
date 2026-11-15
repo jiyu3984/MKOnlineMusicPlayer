@@ -52,3 +52,13 @@ dist/
 /temp/.download*
 __pycache__/
 *.pyc
+
+# Android local toolchains, output and signing material
+/android/.gradle/
+/android/local.properties
+/android/**/build/
+/android/build/
+*.jks
+*.keystore
+*.apk
+*.aab

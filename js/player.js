@@ -154,6 +154,7 @@ function orderChange() {
             layer.msg("随机播放");
             rem.order = 3;
     }
+    if(rem.audio && rem.audio[0].isNativeAudio) rem.audio[0].setPlaybackOrder(rem.order);
 }
 
 // 播放
@@ -208,11 +209,13 @@ function audioPause() {
 
 // 播放上一首歌
 function prevMusic() {
+    if(rem.audio && rem.audio[0].isNativeAudio && rem.audio[0].previous()) return;
     playList(rem.playid - 1);
 }
 
 // 播放下一首歌
 function nextMusic() {
+    if(rem.audio && rem.audio[0].isNativeAudio && rem.audio[0].next()) return;
     switch (rem.order ? rem.order : 1) {
         case 1,2: 
             playList(rem.playid + 1);
@@ -341,7 +344,8 @@ function playList(id) {
 
 // 初始化 Audio
 function initAudio() {
-    rem.audio = $('<audio></audio>').appendTo('body');
+    var nativeAudio = window.KunMusicNative && window.KunMusicNative.isAvailable && window.KunMusicNative.createAudio();
+    rem.audio = nativeAudio ? $(nativeAudio).appendTo('body') : $('<audio></audio>').appendTo('body');
     
     // 应用初始音量
     rem.audio[0].volume = volume_bar.percent;
@@ -350,8 +354,10 @@ function initAudio() {
     rem.audio[0].addEventListener('play', audioPlay); // 开始播放了
     rem.audio[0].addEventListener('playing', audioPlaying); // 已经成功输出音频
     rem.audio[0].addEventListener('pause', audioPause);   // 暂停
-    $(rem.audio[0]).on('ended', autoNextMusic);   // 播放结束
-    rem.audio[0].addEventListener('error', audioErr);   // 播放器错误处理
+    if(!nativeAudio) $(rem.audio[0]).on('ended', autoNextMusic);   // Android service owns the background queue.
+    rem.audio[0].addEventListener('error', function(event) {
+        if(!nativeAudio || !event.nativeHandled) audioErr(event);
+    });   // Android handles queue failures even while the WebView is suspended.
 }
 
 
@@ -396,7 +402,8 @@ function play(music, attempt) {
             comments(music);
         }
         rem.audio[0].pause();
-        rem.audio.attr('src', music.url);
+        if(rem.audio[0].isNativeAudio) rem.audio[0].setMusic(music);
+        else rem.audio.attr('src', music.url);
         attempt.source = rem.audio[0].src;
         if(!requestAudioPlay(attempt)) return;
     } catch(e) {

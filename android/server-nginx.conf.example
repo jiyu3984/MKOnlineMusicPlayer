@@ -1,0 +1,14 @@
+# Add inside the HTTPS music-site server block, before the generic PHP deny rule.
+# Adjust this socket and include path for your PHP-FPM installation.
+location = /client-api.php {
+    limit_req zone=music_api_rate burst=20 nodelay;
+    limit_req_status 429;
+    limit_conn music_per_ip 4;
+    limit_conn_status 429;
+    include /www/server/nginx/conf/fastcgi.conf;
+    fastcgi_param HTTP_HOST $http_host;
+    fastcgi_pass unix:/run/mkonline-music/php-fpm.sock;
+    fastcgi_read_timeout 70s;
+    fastcgi_param HTTP_PROXY "";
+}
+location ^~ /android/ { return 404; }

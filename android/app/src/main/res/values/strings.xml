@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">坤音乐</string>
+    <string name="media_notification_channel">音乐播放</string>
+    <string name="media_notification_channel_description">歌曲封面与播放控制</string>
+</resources>

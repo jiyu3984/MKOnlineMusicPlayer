@@ -374,6 +374,13 @@ function getAudioTime () {
     }
 };
 
+// External app links contain song identifiers, never a supplied media URL.
+function clientSongUri(music) {
+    if(!music || music.id == null || ['netease','kugou','tencent','kuwo','baidu','xiami'].indexOf(music.source) < 0 ||
+        !/^[A-Za-z0-9_-]{1,192}$/.test(String(music.id))) return '';
+    return 'kunmusic://song?source=' + encodeURIComponent(music.source) + '&id=' + encodeURIComponent(music.id);
+}
+
 // 展现系统列表中任意首歌的歌曲信息
 function musicInfo(list, index) {
     var music = musicList[list].item[index];
@@ -385,12 +392,19 @@ function musicInfo(list, index) {
         tempStr += '<br><span class="info-title">时长：</span>' + formatTime(rem.audio[0].duration);
     }
     
-    tempStr += '<br><span class="info-title">操作：</span>' + 
+    tempStr += '<br><span class="info-title">操作：</span>';
+    if(!window.KunMusicNative || !window.KunMusicNative.isAvailable) tempStr +=
     '<span class="info-btn" onclick="thisDownload(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">下载</span>' +
     '<span style="margin-left: 10px" class="info-btn" onclick="thisDownloadLrc(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">下载歌词</span>' +
-    '<span style="margin-left: 10px" class="info-btn" onclick="thisDownloadPic(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">下载封面</span>' +
+    '<span style="margin-left: 10px" class="info-btn" onclick="thisDownloadPic(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">下载封面</span>';
+    tempStr +=
     '<span style="margin-left: 10px" class="info-btn" onclick="thisShare(this)" data-list="' + escapeHtml(list) + '" data-index="' + escapeHtml(index) + '">外链</span>';
     
+    var clientLink = clientSongUri(music);
+    if(clientLink && !window.KunMusicAndroid) {
+        tempStr += '<br><a class="info-btn" href="' + escapeHtml(clientLink) + '">在坤音乐 App 中播放</a>';
+    }
+
     layer.open({
         type: 0,
         shade: [0.25,,'#000'],

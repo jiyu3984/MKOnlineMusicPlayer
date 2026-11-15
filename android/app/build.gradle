@@ -1,0 +1,75 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'cn.kunps.music'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'cn.kunps.music'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+        testInstrumentationRunner 'cn.kunps.music.AppSmokeInstrumentation'
+    }
+
+    buildFeatures { buildConfig true }
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/playerAssets')
+
+    signingConfigs {
+        if (System.getenv('KUNMUSIC_KEYSTORE')) {
+            release {
+                storeFile file(System.getenv('KUNMUSIC_KEYSTORE'))
+                storePassword System.getenv('KUNMUSIC_STORE_PASSWORD')
+                keyAlias 'kunmusic'
+                keyPassword System.getenv('KUNMUSIC_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv('KUNMUSIC_KEYSTORE')) signingConfig signingConfigs.release
+        }
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+    implementation 'androidx.activity:activity:1.10.1'
+    implementation 'androidx.webkit:webkit:1.14.0'
+    implementation 'androidx.media3:media3-exoplayer:1.8.0'
+    implementation 'androidx.media3:media3-session:1.8.0'
+    implementation 'androidx.media3:media3-datasource-okhttp:1.8.0'
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// Every interface resource ships inside the APK. Only data and media use the network.
+tasks.register('bundlePlayerAssets', Sync) {
+    from rootProject.file('..')
+    into layout.buildDirectory.dir('generated/playerAssets/player')
+    include 'index.html', 'favicon.ico', 'css/**', 'images/**', 'js/**'
+    include 'plugns/layui/**'
+    exclude '**/*.php', '**/*.map', '**/*.md'
+    filesMatching('index.html') {
+        filter { line ->
+            line.replace('<head>', '<head>\n<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'; img-src \'self\' https: data:; connect-src https://yy.kunps.cn; font-src \'self\'; media-src \'none\'; frame-src \'none\'; object-src \'none\'; base-uri \'self\'">')
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn 'bundlePlayerAssets' }
